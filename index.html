@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>For mammacita</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Outfit:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,500;1,500&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <div id="device">
+
+        <div id="aurora"></div>
+        <canvas id="bgCanvas"></canvas>
+        <div id="loveLayer"></div>
+        <div id="fx"></div>
+        <div id="filmGrain"></div>
+        <div id="heartbeat"></div>
+        <div id="flashOverlay"></div>
+        <div id="cameraUI" class="hidden">
+          <span class="cam-rec"><i></i> REC</span>
+          <span class="cam-date" id="camDate"></span>
+          <span class="cam-subject" id="camSubject"></span>
+          <span class="cam-id">CAM 01</span>
+        </div>
+        <div id="filmReel" class="hidden">
+          <div class="reel-strip"></div>
+          <p class="reel-chapter mono" id="reelNum"></p>
+          <h2 class="reel-title" id="reelTitle"></h2>
+          <p class="reel-sub muted" id="reelSub"></p>
+        </div>
+        <div id="pinGranted" class="hidden">
+          <p class="mono gold" id="pinGrantedTxt"></p>
+          <p class="mono" id="pinOverrideTxt"></p>
+        </div>
+        <div id="mascot" class="hidden" aria-hidden="true">
+          <span id="mascotFace">♥</span>
+          <p id="mascotSay"></p>
+        </div>
+        <div id="noGhost">no</div>
+        <div id="toast" class="toast"></div>
+
+        <!-- PRESTART -->
+        <section class="scene" id="scene-prestart">
+          <div class="center prestart-card">
+            <p class="tiny">before we start</p>
+            <h1 class="script gold prestart-title">Operation Birthday</h1>
+            <p class="line prestart-line" id="prestartLine"></p>
+            <button class="btn" id="prestartGo" style="margin-top:22px"></button>
+          </div>
+        </section>
+
+        <!-- COUNTDOWN -->
+        <section class="scene" id="scene-countdown">
+          <div class="center">
+            <p class="tiny" id="countPhase">too early, Star</p>
+            <h1 class="script gold" style="font-size:3.6rem">wait for it</h1>
+            <p id="countDown" class="mono gold" style="margin-top:18px;font-size:1.5rem"></p>
+            <p class="muted" style="margin-top:20px">21 September</p>
+            <p class="tiny" id="fromTap" style="margin-top:56px;cursor:pointer">from Dzaddzzzy</p>
+          </div>
+        </section>
+
+        <!-- DOSSIER -->
+        <section class="scene" id="scene-dossier">
+          <button class="heart-egg" data-heart="0" style="left:18px;top:18px">♥</button>
+          <pre class="dossier-log mono" id="dossierLog"></pre>
+          <div class="progress"><i id="loadBar"></i></div>
+          <p class="tiny" id="loadPct" style="margin-top:10px">0%</p>
+          <div class="scanlines"></div>
+        </section>
+
+        <!-- LEGAL -->
+        <section class="scene" id="scene-legal">
+          <div class="center" style="width:100%">
+            <p class="tiny">before chaos</p>
+            <h2 class="gold" style="margin:14px 0 10px;font-size:1.5rem">a few things first</h2>
+            <div class="check">
+              <input type="checkbox" id="termA" />
+              <label for="termA"></label>
+            </div>
+            <div class="check">
+              <input type="checkbox" id="termB" />
+              <label for="termB"></label>
+            </div>
+            <button class="btn wide hidden" id="legalGo" style="margin-top:20px"></button>
+          </div>
+          <div class="banner" id="cookieBanner">
+            <p id="cookieText"></p>
+            <div class="row">
+              <button class="btn" id="cookieA" style="flex:1"></button>
+              <button class="btn ghost" id="cookieB" style="flex:1"></button>
+            </div>
+            <button class="heart-egg" data-heart="1" style="right:8px;top:8px">♥</button>
+          </div>
+        </section>
+
+        <!-- HEY -->
+        <section class="scene" id="scene-hey">
+          <button class="skip" id="skipHey">skip</button>
+          <div class="center">
+            <p class="line big" id="heyLine"></p>
+            <div class="cake hidden" id="littleCake">🎂</div>
+          </div>
+        </section>
+
+        <!-- BOOM -->
+        <section class="scene" id="scene-boom">
+          <div class="center" style="width:100%">
+            <p class="tiny" id="boomTapName" style="cursor:pointer;letter-spacing:.35em">MAMMACITA</p>
+            <h1 class="name-hero" id="boomTitle"></h1>
+            <p class="script gold" id="boomSub" style="font-size:2.4rem;margin-top:6px"></p>
+            <canvas id="heartCanvas" width="280" height="200"></canvas>
+            <p class="line" id="freezeLine" style="margin-top:16px"></p>
+            <button class="btn hidden" id="boomGo" style="margin-top:20px">continue</button>
+          </div>
+        </section>
+
+        <!-- BUILD -->
+        <section class="scene" id="scene-build">
+          <button class="skip" id="skipBuild">skip</button>
+          <div class="center">
+            <p class="line big" id="buildLine"></p>
+          </div>
+        </section>
+
+        <!-- CALL -->
+        <section class="scene" id="scene-call">
+          <div class="call-bg" id="callBg"></div>
+          <div class="call-overlay"></div>
+          <button class="heart-egg" data-heart="2" style="right:20px;top:24px">♥</button>
+          <div class="call-ui">
+            <p class="call-banner mono">Incoming Call</p>
+            <div class="call-pulse-ring"></div>
+            <div class="call-avatar-wrap">
+              <img id="callAvatarImg" class="call-avatar-img hidden" alt="" />
+              <div class="avatar call-avatar" id="callAvatarFallback">♥</div>
+            </div>
+            <h2 id="callName" class="call-who"></h2>
+            <p class="call-sub" id="callSub">Incoming Call...</p>
+            <p class="call-roast hidden" id="callRoast"></p>
+            <div class="call-actions call-actions-ios">
+              <div class="round-wrap">
+                <button class="round danger" id="declineBtn"><span class="round-icon">✕</span></button>
+                <p class="tiny" style="margin-top:6px">Decline</p>
+              </div>
+              <div class="round-wrap">
+                <button class="round neutral" id="callCamBtn"><span class="round-icon">◉</span></button>
+                <p class="tiny" style="margin-top:6px">Video</p>
+              </div>
+              <div class="round-wrap">
+                <button class="round ok" id="acceptBtn"><span class="round-icon">✓</span></button>
+                <p class="tiny" style="margin-top:6px">Accept</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- DANCE -->
+        <section class="scene" id="scene-dance">
+          <div class="video-frame" id="danceFrame">
+            <video id="danceVid" playsinline webkit-playsinline></video>
+            <div class="ph hidden" id="dancePh">
+              <p>dance clip goes here<br /><span class="tiny">Assets/videos/intro/dance.mp4</span></p>
+            </div>
+            <div class="sticker" id="danceSticker"></div>
+          </div>
+          <p class="center muted" id="danceAfter" style="margin-top:14px"></p>
+          <button class="btn" id="danceGo" style="margin-top:10px">continue</button>
+        </section>
+
+        <!-- LOVE TRAP -->
+        <section class="scene" id="scene-love">
+          <p class="tiny">before we continue</p>
+          <h1 class="love-q" style="margin-top:12px" id="loveQ"></h1>
+          <p class="trap-msg" id="trapMsg" style="margin-top:12px"></p>
+          <div class="trap" id="trap">
+            <button class="btn" id="yesBtn">YES</button>
+            <!-- The NO creature — legs visible below button -->
+            <div id="noCreature">
+              <button id="noBtn">NO</button>
+              <div class="creature-legs">
+                <div class="creature-leg left"></div>
+                <div class="creature-leg right"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CAPTCHA -->
+        <section class="scene" id="scene-captcha">
+          <p class="tiny" id="captchaTitle"></p>
+          <h2 id="captchaTask" style="margin-top:10px;font-size:1.1rem;line-height:1.35"></h2>
+          <div class="grid9" id="captchaGrid"></div>
+          <p class="muted" id="captchaMsg" style="min-height:1.4em;margin-bottom:8px"></p>
+          <button class="btn wide" id="captchaGo">verify</button>
+        </section>
+
+        <!-- PERMISSION -->
+        <section class="scene" id="scene-perm">
+          <div class="center" style="width:100%">
+            <div class="perm">
+              <h3>Safari / Chrome</h3>
+              <p id="permAsk"></p>
+              <p id="permReason" style="margin-top:8px"></p>
+              <div class="row" style="margin-top:14px">
+                <button class="btn ghost" id="permNo" style="flex:1;color:#666;border-color:#ddd">Don't Allow</button>
+                <button class="btn" id="permYes" style="flex:1">Allow</button>
+              </div>
+            </div>
+            <p class="gold" id="permFound" style="margin-top:24px;font-size:1.1rem;min-height:1.5em"></p>
+          </div>
+        </section>
+
+        <!-- PIN -->
+        <section class="scene" id="scene-pin">
+          <p class="tiny" id="pinIntro" style="min-height:1.2em"></p>
+          <div class="vault" id="vault">🔐</div>
+          <h2>Enter the 4-digit PIN</h2>
+          <p class="muted" id="pinHint" style="margin-top:8px;min-height:2.8em;font-size:.95rem"></p>
+          <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+          <div class="keypad" id="keys"></div>
+          <button class="btn ghost" id="pinHelp" style="margin-top:14px"></button>
+        </section>
+
+        <!-- HUB -->
+        <section class="scene" id="scene-hub">
+          <button class="heart-egg" data-heart="3" style="left:16px;top:16px">♥</button>
+          <p class="tiny">unlocked</p>
+          <h1 id="hubTitle" style="margin-top:4px"></h1>
+          <p class="muted" id="hubSub"></p>
+          <div class="candles-meter" id="meter"></div>
+          <div class="world-map" id="worldMap">
+            <div class="map-glow" id="mapGlow"></div>
+            <button class="map-node romantic" data-room="romantic"><span class="map-icon">R</span><b>ROMANTIC</b><span class="map-tag"></span></button>
+            <button class="map-node funny" data-room="funny"><span class="map-icon">F</span><b>FUNNY</b><span class="map-tag"></span></button>
+            <div class="map-you"><span>YOU</span></div>
+            <button class="map-node flirty locked" data-room="flirty"><span class="map-icon">L</span><b>FLIRTY</b><span class="map-tag"></span></button>
+            <button class="map-node us" data-room="us"><span class="map-icon">U</span><b>US</b><span class="map-tag"></span></button>
+            <button class="map-node capsule locked" data-room="capsule"><span class="map-icon">⏳</span><b>30 DAYS</b><span class="map-tag"></span></button>
+          </div>
+          <p class="hub-complete hidden" id="hubComplete"></p>
+          <button class="btn hidden wide" id="giftDoor" style="margin-top:16px">one last thing</button>
+        </section>
+
+        <!-- FLIRTY GATE — together / forever -->
+        <section class="scene" id="scene-flirty-gate">
+          <div class="center" style="width:100%">
+            <p class="tiny">one more lock</p>
+            <p class="together-word script gold" id="togetherWord">together</p>
+            <p class="muted" id="flirtyGateHint" style="margin-top:8px"></p>
+            <input id="flirtyPassInput" class="word-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false" />
+            <p class="trap-msg" id="flirtyGateMsg" style="margin-top:12px;min-height:1.4em"></p>
+            <button class="btn wide" id="flirtyGateGo" style="margin-top:16px"></button>
+            <button class="btn ghost" id="flirtyGateBack" style="margin-top:10px">not yet</button>
+          </div>
+        </section>
+
+        <!-- ROOM — funny / flirty / romantic -->
+        <section class="scene" id="scene-room">
+          <p class="tiny" id="roomTag"></p>
+          <h2 id="roomTitle" style="margin-bottom:4px"></h2>
+
+          <!-- Book flip (funny) -->
+          <div class="book-wrap hidden" id="bookView">
+            <div class="book-page" id="bookPage">
+              <div class="page-front">
+                <img class="b-pic" id="bookFront" alt="" />
+                <div class="ph-page hidden" id="bookFrontPh"></div>
+                <div class="page-caption" id="bookFrontCap"></div>
+              </div>
+              <div class="page-back">
+                <img class="b-pic" id="bookBack" alt="" />
+                <div class="ph-page hidden" id="bookBackPh"></div>
+                <div class="page-caption" id="bookBackCap"></div>
+              </div>
+            </div>
+            <div class="stickman" aria-hidden="true" id="stickman">🕺</div>
+          </div>
+
+          <!-- Full-screen flirty -->
+          <div class="flirty-stage hidden" id="popoutView">
+            <div class="flirty-bg" id="flirtyBg"></div>
+            <div class="flirty-vignette"></div>
+            <div class="popout-card" id="popoutCard">
+              <img id="popoutImg" alt="" />
+              <div class="ph-pop hidden" id="popoutPh"></div>
+            </div>
+            <p class="flirty-line" id="popoutLabel"></p>
+          </div>
+
+          <!-- Polaroid (romantic) -->
+          <div id="polaroidView" class="hidden">
+            <img class="pic" id="roomPic" alt="" />
+            <div class="ph pic hidden" id="roomPh"></div>
+            <canvas id="scratch" class="hidden"></canvas>
+            <div class="cap" id="roomCap"></div>
+          </div>
+          <div id="romanticHeartIntro" class="hidden" aria-hidden="true"></div>
+
+          <p class="slide-msg" id="roomMsg"></p>
+          <div class="nav-row">
+            <button class="btn ghost" id="roomBack">miss me already?</button>
+            <button class="btn" id="roomNext">next</button>
+          </div>
+        </section>
+
+        <!-- US TIMELINE -->
+        <section class="scene" id="scene-us">
+          <div class="rotate-gate hidden" id="rotateGate">
+            <p style="font-size:2.4rem">↻</p>
+            <p id="rotateCopy"></p>
+            <button class="btn ghost" id="rotateSkip"></button>
+          </div>
+          <p class="tiny">THEN → NOW → US</p>
+          <h2 style="margin-bottom:8px">Memory Constellation</h2>
+          <div class="constellation-shell" id="constellationShell">
+            <svg id="constellationLines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+            <div class="constellation-map" id="constellationMap"></div>
+          </div>
+          <article class="const-card hidden" id="constCard">
+            <p class="tiny" id="constTag"></p>
+            <div class="const-media" id="constMedia"></div>
+            <p class="muted" id="constText" style="margin-top:10px;font-size:.92rem"></p>
+            <div class="chats hidden" id="constChats"></div>
+          </article>
+          <div class="nav-row">
+            <button class="btn ghost" id="usBack">back</button>
+            <button class="btn" id="usDone">discover all stars</button>
+          </div>
+        </section>
+
+        <!-- CAPSULE -->
+        <section class="scene" id="scene-capsule">
+          <div class="center">
+            <p class="tiny">time capsule</p>
+            <h1 class="script gold" style="font-size:3.2rem">later, Star</h1>
+            <p id="capsuleCopy" class="line" style="margin-top:20px"></p>
+            <button class="btn ghost" id="capsuleBack" style="margin-top:24px">back</button>
+          </div>
+        </section>
+
+        <!-- GIFT -->
+        <section class="scene" id="scene-gift">
+          <div class="center" style="width:100%">
+            <p class="line big" id="giftLine"></p>
+            <div class="gift-box" id="giftBox">🎁</div>
+            <div class="hold-ring hidden" id="holdRing"><span>HOLD</span></div>
+            <button class="btn" id="giftOpen">open</button>
+          </div>
+        </section>
+
+        <!-- SCAN -->
+        <section class="scene" id="scene-scan">
+          <div class="center">
+            <p class="tiny">calculating</p>
+            <h1 class="mono gold" id="scanPct" style="font-size:3.8rem">0%</h1>
+            <p id="scanMsg" style="margin-top:12px;min-height:1.5em"></p>
+          </div>
+        </section>
+
+        <!-- FINALE -->
+        <section class="scene" id="scene-finale">
+          <div class="video-frame" id="finaleFrame">
+            <video id="finaleVid" playsinline webkit-playsinline></video>
+            <div class="ph hidden" id="finalePh">
+              final video / special photo<br />
+              <span class="tiny">Assets/videos/final/surprise.mp4</span>
+            </div>
+          </div>
+          <p class="center" id="finaleCap" style="margin-top:14px;font-style:italic"></p>
+          <button class="btn" id="finaleGo" style="margin-top:12px">continue</button>
+        </section>
+
+        <!-- LETTER -->
+        <section class="scene" id="scene-letter">
+          <button class="heart-egg" data-heart="4" style="right:24px;top:12px">♥</button>
+          <div class="wax" id="wax">D</div>
+          <article class="letter" id="letterBody"></article>
+          <button class="btn" id="letterGo" style="margin-top:16px">blow out the candles</button>
+        </section>
+
+        <!-- CANDLES -->
+        <section class="scene" id="scene-candles">
+          <div class="center" style="width:100%">
+            <p class="tiny" id="blowHint"></p>
+            <div class="cake-stage">
+              <div class="flame-row" id="flameRow"></div>
+              <div class="cake-big" id="bigCake">🎂</div>
+            </div>
+            <p class="hidden gold" id="lastCandleMsg" style="margin-top:12px;font-size:1.05rem"></p>
+            <p class="muted" id="candleMsg" style="margin-top:18px"></p>
+          </div>
+        </section>
+
+        <!-- RECEIPT -->
+        <section class="scene" id="scene-receipt">
+          <div class="receipt" id="receiptBox"></div>
+          <button class="btn" id="receiptGo" style="margin-top:16px">the end…?</button>
+        </section>
+
+        <!-- CREDITS -->
+        <section class="scene" id="scene-credits">
+          <div class="center" style="width:100%">
+            <p class="tiny">issued to</p>
+            <h1 class="stars-name script gold" id="creditName"></h1>
+            <p id="endLine" class="line" style="margin-top:14px"></p>
+            <div class="share-card" id="shareCard" style="margin-top:16px">
+              <p class="tiny">screenshot this</p>
+              <h2 id="shareTitle" style="font-size:.98rem;margin-top:6px"></h2>
+              <p class="muted" id="shareSub" style="margin-top:4px"></p>
+            </div>
+            <div class="directors-cut hidden" id="directorsCut">
+              <p class="line" id="dcWait"></p>
+              <p class="gold" id="dcSurvived" style="margin-top:8px"></p>
+              <div class="dc-montage" id="dcMontage"></div>
+              <button class="btn ghost" id="dcBtn" style="margin-top:14px"></button>
+            </div>
+            <button class="btn" id="waBtn" style="margin-top:16px">text Dzaddzzzy now.</button>
+            <button class="btn ghost" id="replayBtn" style="margin-top:10px">replay from start</button>
+            <p class="tiny" id="theEnd" style="margin-top:22px;cursor:pointer"></p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
