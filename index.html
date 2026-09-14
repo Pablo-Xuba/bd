@@ -12,7 +12,7 @@
   </head>
   <body>
     <div id="stage">
-      <div id="device">
+      <div id="device"> 
 
         <div id="aurora"></div>
         <canvas id="bgCanvas"></canvas>
@@ -21,6 +21,7 @@
         <div id="filmGrain"></div>
         <div id="heartbeat"></div>
         <div id="flashOverlay"></div>
+        <div id="planetWarp" class="hidden" aria-hidden="true"></div>
         <div id="cameraUI" class="hidden">
           <span class="cam-rec"><i></i> REC</span>
           <span class="cam-date" id="camDate"></span>
@@ -236,11 +237,11 @@
           <div class="candles-meter" id="meter"></div>
           <div class="world-map" id="worldMap">
             <div class="map-glow" id="mapGlow"></div>
-            <button class="map-node romantic" data-room="romantic"><span class="map-icon">R</span><b>ROMANTIC</b><span class="map-tag"></span></button>
-            <button class="map-node funny" data-room="funny"><span class="map-icon">F</span><b>FUNNY</b><span class="map-tag"></span></button>
-            <div class="map-you"><span>YOU</span></div>
-            <button class="map-node flirty locked" data-room="flirty"><span class="map-icon">L</span><b>FLIRTY</b><span class="map-tag"></span></button>
-            <button class="map-node us" data-room="us"><span class="map-icon">U</span><b>US</b><span class="map-tag"></span></button>
+            <button class="map-node romantic" data-room="romantic"><span class="map-icon">💜</span><b>ROMANTIC</b><span class="map-tag"></span></button>
+            <button class="map-node funny" data-room="funny"><span class="map-icon">😄</span><b>FUNNY</b><span class="map-tag"></span></button>
+            <div class="map-you"><span></span></div>
+            <button class="map-node flirty locked" data-room="flirty"><span class="map-icon">😋</span><b>FLIRTY</b><span class="map-tag"></span></button>
+            <button class="map-node us" data-room="us"><span class="map-icon">🤗</span><b>US</b><span class="map-tag"></span></button>
             <button class="map-node capsule locked" data-room="capsule"><span class="map-icon">⏳</span><b>30 DAYS</b><span class="map-tag"></span></button>
           </div>
           <p class="hub-complete hidden" id="hubComplete"></p>
@@ -301,6 +302,7 @@
             <div class="cap" id="roomCap"></div>
           </div>
           <div id="romanticHeartIntro" class="hidden" aria-hidden="true"></div>
+          <div id="romanticChatIntro" class="hidden" aria-hidden="true"></div>
 
           <p class="slide-msg" id="roomMsg"></p>
           <div class="nav-row">
@@ -317,7 +319,8 @@
             <button class="btn ghost" id="rotateSkip"></button>
           </div>
           <p class="tiny">THEN → NOW → US</p>
-          <h2 style="margin-bottom:8px">Memory Constellation</h2>
+          <h2 style="margin-bottom:6px">Memory Journey</h2>
+          <p class="journey-status mono" id="journeyStatus"></p>
           <div class="constellation-shell" id="constellationShell">
             <svg id="constellationLines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
             <div class="constellation-map" id="constellationMap"></div>

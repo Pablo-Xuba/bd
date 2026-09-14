@@ -24,9 +24,11 @@
   let current = '', pin = '', helpStep = 0, roomId = 'funny', slide = 0;
   let noFree = false, giftPhase = 0, isFlipping = false;
   let idleStage = 0, lastCandleLit = false, directorsPlayed = false, flirtyUnlocked = false;
-  let funnySwipe = null;
+  let funnyAutoTimer = null;
   let romanticAutoTimer = null;
   let romanticBusy = false;
+  let danceStickerTimer = null;
+  let planetWarping = false;
   let usFound = new Set();
   let usTarget = 0;
   let captchaAttempt = 0;
@@ -34,6 +36,75 @@
   let captchaRage = false;
   let captchaCaseHits = { correct: 0, wrong: 0, all: 0, mixed: 0, missed: 0, none: 0 };
   const PH = 'Assets/images/_placeholder.svg';
+  const ROOM_KEYS = ['funny', 'flirty', 'romantic', 'us'];
+  const ROOM_MEDIA = buildRoomMedia();
+
+  function buildRoomMedia() {
+    const out = {};
+    ROOM_KEYS.forEach((room) => {
+      const files = Array.isArray(C.media?.[room]) ? C.media[room] : [];
+      const fallback = C.copy.rooms?.[room]?.lines || [];
+      const parsed = files
+        .map((name, idx) => {
+          const file = String(name || '').trim();
+          if (!file) return null;
+          const parsed = parseMediaName(file, idx + 1);
+          return {
+            file,
+            order: parsed.order,
+            caption: parsed.caption || fallback[idx] || `${room} memory ${idx + 1}`,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.order - b.order);
+      out[room] = parsed;
+    });
+    return out;
+  }
+
+  function parseMediaName(file, fallbackOrder) {
+    const base = file.replace(/\.[^/.]+$/, '');
+    const match = base.match(/^(\d+)\.{2,}(.*)$/);
+    const order = match ? Number(match[1]) : fallbackOrder;
+    const rawCaption = match ? match[2] : base;
+    const caption = rawCaption
+      .replace(/\.{2,}/g, ' ')
+      .replace(/[_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return { order, caption };
+  }
+
+  function mediaUrl(folder, file) {
+    return encodeURI(`Assets/images/${folder}/${file}`);
+  }
+
+  function roomCount(room) {
+    const known = ROOM_MEDIA[room];
+    if (known && known.length) return known.length;
+    return Number(C.slots?.[room] || 0);
+  }
+
+  async function roomImage(room, idx) {
+    const known = ROOM_MEDIA[room];
+    if (known && known[idx]) {
+      const url = mediaUrl(room, known[idx].file);
+      if (await exists(url)) return url;
+    }
+    return resolveImage(room, idx + 1);
+  }
+
+  function roomCaption(room, idx) {
+    const known = ROOM_MEDIA[room];
+    if (known && known[idx]?.caption) return known[idx].caption;
+    const lines = C.copy.rooms?.[room]?.lines || [];
+    return lines.length ? lines[idx % lines.length] : `${room} memory ${idx + 1}`;
+  }
+
+  function videoSource(kind, fallback) {
+    const src = C.videos && typeof C.videos[kind] === 'string' ? C.videos[kind].trim() : '';
+    return encodeURI(src || fallback);
+  }
 
   const PHASES = {
     'scene-prestart': 'emotional', 'scene-countdown': 'emotional', 'scene-dossier': 'chaos', 'scene-legal': 'chaos',
@@ -460,7 +531,7 @@
     }
 
     for (const base of [...new Set(bases)]) {
-      for (const ext of ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'PNG']) {
+      for (const ext of ['jpg', 'jpeg', 'png', 'webp', 'jfif', 'JPG', 'PNG', 'JFIF']) {
         const url = `Assets/images/${folder}/${base}.${ext}`;
         if (await exists(url)) return url;
       }
@@ -678,19 +749,33 @@
     const callAvatarFallback = $('callAvatarFallback');
 
     let photo = PH;
+    if (Array.isArray(C.media?.videocall) && C.media.videocall[0]) {
+      photo = mediaUrl('videocall', C.media.videocall[0]);
+    }
+    const curatedSources = [
+      () => roomImage('us', 0),
+      () => roomImage('romantic', 0),
+      () => roomImage('funny', 0),
+    ];
     const callSources = [
       ['videocall', 1],
       ['videocall', 'call'],
       ['videocall', 'avatar'],
       ['videocall', 'profile'],
       ['catcha/her', 1],
-      ['us', 1],
-      ['romantic', 1],
       ['randoms', 1],
     ];
-    for (const [folder, key] of callSources) {
-      const src = await resolveImage(folder, key);
-      if (src !== PH) { photo = src; break; }
+    if (photo === PH) {
+      for (const pick of curatedSources) {
+        const src = await pick();
+        if (src !== PH) { photo = src; break; }
+      }
+    }
+    if (photo === PH) {
+      for (const [folder, key] of callSources) {
+        const src = await resolveImage(folder, key);
+        if (src !== PH) { photo = src; break; }
+      }
     }
     if (photo !== PH) {
       callBg.style.backgroundImage = `url("${photo}")`;
@@ -733,6 +818,23 @@
     vibe(12);
   };
 
+  function stopDanceStickerLoop() {
+    if (!danceStickerTimer) return;
+    clearInterval(danceStickerTimer);
+    danceStickerTimer = null;
+  }
+
+  function showDanceSticker(text) {
+    const el = $('danceSticker');
+    el.textContent = text;
+    if (!window.gsap) return;
+    gsap.killTweensOf(el);
+    gsap.fromTo(el,
+      { opacity: 0, y: 18, scale: 0.92, filter: 'blur(5px)' },
+      { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.55, ease: 'power3.out' });
+    gsap.to(el, { opacity: 0.22, duration: 1.2, delay: 1.45, ease: 'power2.out' });
+  }
+
   $('acceptBtn').onclick = async () => {
     if (window.gsap) {
       await new Promise(res => {
@@ -742,7 +844,8 @@
     }
     show('scene-dance', 'slam');
     const vid = $('danceVid');
-    vid.src = 'Assets/videos/intro/dance.mp4';
+    vid.src = videoSource('intro', 'Assets/videos/intro/dance.mp4');
+    vid.loop = true;
     vid.playsInline = true;
     vid.onerror = () => { $('dancePh').classList.remove('hidden'); vid.classList.add('hidden'); };
     const ok = await vid.play().then(() => true).catch(() => false);
@@ -750,14 +853,13 @@
 
     if (window.gsap) gsap.fromTo('#danceFrame', { scale: 0.8, opacity: 0, rotation: -5 }, { scale: 1, opacity: 1, rotation: -1.8, duration: 0.7, ease: 'elastic.out(1,.6)' });
 
+    stopDanceStickerLoop();
     let i = 0;
-    $('danceSticker').textContent = C.copy.danceStickers[0];
-    const st = setInterval(() => {
+    showDanceSticker(C.copy.danceStickers[0]);
+    danceStickerTimer = setInterval(() => {
       i++;
-      $('danceSticker').textContent = C.copy.danceStickers[i % C.copy.danceStickers.length];
-      if (window.gsap) gsap.fromTo($('danceSticker'), { scale: 0.5, rotation: (Math.random() - 0.5) * 10 }, { scale: 1, rotation: 0, duration: 0.4, ease: 'back.out(1.5)' });
-      if (i > 10) clearInterval(st);
-    }, 2200);
+      showDanceSticker(C.copy.danceStickers[i % C.copy.danceStickers.length]);
+    }, 2400);
 
     $('danceAfter').textContent = '';
     await wait(2800);
@@ -767,7 +869,11 @@
     $('danceAfter').textContent = C.copy.danceAfter[1];
   };
 
-  $('danceGo').onclick = () => sceneLove();
+  $('danceGo').onclick = () => {
+    stopDanceStickerLoop();
+    try { $('danceVid').pause(); } catch (_) {}
+    sceneLove();
+  };
 
   /* ── LOVE TRAP ─────────────────────────────────── */
   function sceneLove() {
@@ -859,23 +965,33 @@
     const grid = $('captchaGrid');
     grid.innerHTML = '';
 
-    // 4 real photos (catcha/her) + 3 decoys (catcha/marsai).
+    // 4 real photos (catcha/her) + 3 decoys (catcha/marsai) by default.
     const cards = [];
-    const realCount = 4;
-    const decoyCount = 3;
+    const herFiles = Array.isArray(C.media?.captchaHer) ? C.media.captchaHer.filter(Boolean) : [];
+    const decoyFiles = Array.isArray(C.media?.captchaDecoys) ? C.media.captchaDecoys.filter(Boolean) : [];
+    const realCount = herFiles.length || 4;
+    const decoyCount = decoyFiles.length || 3;
     const who = (C.her.call || C.her.name).toLowerCase();
+
+    const buildCard = async (folder, file, fallbackKey) => {
+      if (file) {
+        const src = encodeURI(`Assets/images/${folder}/${file}`);
+        return (await exists(src)) ? src : PH;
+      }
+      return resolveImage(folder, fallbackKey);
+    };
 
     for (let i = 1; i <= realCount; i++) {
       cards.push({
         correct: true,
-        src: await resolveImage('catcha/her', i),
+        src: await buildCard('catcha/her', herFiles[i - 1], i),
         ph: `${C.her.call || C.her.name} ${i}`,
       });
     }
     for (let i = 1; i <= decoyCount; i++) {
       cards.push({
         correct: false,
-        src: await resolveImage('catcha/marsai', i),
+        src: await buildCard('catcha/marsai', decoyFiles[i - 1], i),
         ph: `not ${who} ${i}`,
       });
     }
@@ -1164,7 +1280,14 @@
     $('hubSub').textContent = C.copy.hubSub;
     refreshHub();
     if (window.gsap) {
-      gsap.fromTo('.map-node', { opacity: 0, y: 30, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.08, ease: 'back.out(1.4)', delay: 0.15 });
+      document.querySelectorAll('.map-node').forEach((node, i) => {
+        gsap.fromTo(node,
+          { opacity: 0, scale: 0.72, filter: 'blur(4px)' },
+          {
+            opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.55, delay: 0.12 + i * 0.08, ease: 'back.out(1.5)',
+            onComplete: () => gsap.set(node, { clearProps: 'transform,filter,opacity' }),
+          });
+      });
     }
   }
 
@@ -1173,14 +1296,14 @@
     $('meter').innerHTML = '';
     for (let i = 0; i < 4; i++) {
       const s = document.createElement('span');
-      s.textContent = '🕯️';
+      s.textContent = '✦';
       if (i < n) s.className = 'lit';
       $('meter').appendChild(s);
     }
 
-    document.querySelector('.map-node.funny .map-tag').textContent = C.copy.rooms.funny.tag;
-    document.querySelector('.map-node.romantic .map-tag').textContent = C.copy.rooms.romantic.tag;
-    document.querySelector('.map-node.us .map-tag').textContent = C.copy.rooms.us.tag;
+    document.querySelector('.map-node.funny .map-tag').textContent = stats.rooms.has('funny') ? 'cleared' : 'chaos';
+    document.querySelector('.map-node.romantic .map-tag').textContent = stats.rooms.has('romantic') ? 'cleared' : 'soft mode';
+    document.querySelector('.map-node.us .map-tag').textContent = stats.rooms.has('us') ? 'cleared' : 'journey';
 
     ['funny', 'romantic', 'us', 'flirty'].forEach(r => {
       const node = document.querySelector('.map-node.' + r);
@@ -1191,8 +1314,8 @@
     const flirtyNode = document.querySelector('.map-node.flirty');
     flirtyNode.classList.toggle('locked', !three);
     document.querySelector('.map-node.flirty .map-tag').textContent = three
-      ? (flirtyUnlocked ? C.copy.rooms.flirty.tag : 'together…')
-      : C.copy.rooms.flirty.locked;
+      ? (flirtyUnlocked ? 'cleared' : 'together...')
+      : 'locked';
 
     const capNode = document.querySelector('.map-node.capsule');
     capNode.classList.toggle('locked', !capsuleOpen);
@@ -1262,9 +1385,43 @@
   $('flirtyPassInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryFlirtyPass(); });
   $('flirtyGateBack').onclick = () => { show('scene-hub', 'fade'); refreshHub(); };
 
+  async function travelToPlanet(id) {
+    if (!window.gsap || current !== 'scene-hub' || planetWarping) return;
+    const map = $('worldMap');
+    const node = document.querySelector(`.map-node[data-room="${id}"]`);
+    const warp = $('planetWarp');
+    if (!map || !node || !warp) return;
+
+    planetWarping = true;
+    warp.classList.remove('hidden');
+
+    const mapRect = map.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
+    const dx = (mapRect.left + mapRect.width / 2 - (nodeRect.left + nodeRect.width / 2)) * 0.9;
+    const dy = (mapRect.top + mapRect.height / 2 - (nodeRect.top + nodeRect.height / 2)) * 0.9;
+
+    await new Promise((resolve) => {
+      const tl = gsap.timeline({
+        onComplete: () => {
+          warp.classList.add('hidden');
+          gsap.set(map, { clearProps: 'transform,filter' });
+          gsap.set(node, { clearProps: 'transform,boxShadow' });
+          planetWarping = false;
+          resolve();
+        },
+      });
+      tl.set(warp, { opacity: 0 });
+      tl.to(warp, { opacity: 1, duration: 0.16 }, 0);
+      tl.to(map, { x: dx, y: dy, scale: 2.35, filter: 'blur(1.5px)', duration: 0.62, ease: 'power3.in' }, 0.02);
+      tl.to(node, { scale: 1.18, boxShadow: '0 0 58px rgba(214,98,122,.72)', duration: 0.2, yoyo: true, repeat: 1 }, 0.04);
+      tl.to(warp, { opacity: 0, duration: 0.22, ease: 'power2.in' }, 0.58);
+    });
+  }
+
   /* ── ROOMS ─────────────────────────────────────── */
   async function openRoom(id) {
     if (id === 'capsule') {
+      await travelToPlanet(id);
       show('scene-capsule', 'up');
       if (capsuleOpen) {
         $('capsuleCopy').textContent = C.copy.capsulePeek.join(' ');
@@ -1279,7 +1436,12 @@
       if (window.gsap) gsap.fromTo(document.querySelector('.map-node.flirty'), { x: -8 }, { x: 0, duration: 0.5, ease: 'elastic.out(1,.3)' });
       return;
     }
-    if (id === 'flirty' && !flirtyUnlocked) return sceneFlirtyGate();
+    if (id === 'flirty' && !flirtyUnlocked) {
+      await travelToPlanet(id);
+      return sceneFlirtyGate();
+    }
+
+    await travelToPlanet(id);
     if (id === 'us') return chapterTransition('us', () => openUs());
 
     const chKey = id === 'romantic' ? 'romantic' : id === 'flirty' ? 'flirty' : 'funny';
@@ -1287,6 +1449,7 @@
   }
 
   async function enterRoom(id) {
+    stopFunnyAuto();
     stopRomanticAuto();
     romanticBusy = false;
     roomId = id;
@@ -1298,6 +1461,8 @@
     $('bookView').classList.add('hidden');
     $('popoutView').classList.add('hidden');
     $('polaroidView').classList.add('hidden');
+    $('romanticChatIntro').classList.add('hidden');
+    $('romanticChatIntro').innerHTML = '';
 
     $('roomTag').textContent = C.copy.rooms[id].tag;
     $('roomTitle').textContent = C.copy.rooms[id].title;
@@ -1323,195 +1488,212 @@
 
   $('capsuleBack').onclick = () => { show('scene-hub', 'fade'); refreshHub(); };
 
-  /* FUNNY — book flip */
+  /* FUNNY — auto chaos reel */
   function setFunnyMessage(idx = slide) {
-    const base = C.copy.rooms.funny.lines[idx % C.copy.rooms.funny.lines.length];
-    const hint = idx > 0 ? 'Swipe left to flip. Swipe right to go back.' : 'Swipe left to flip.';
-    $('roomMsg').textContent = `${base} ${hint}`;
+    $('roomMsg').textContent = roomCaption('funny', idx);
   }
 
-  function resetFunnyDrag(animated = true) {
+  function stopFunnyAuto() {
+    if (!funnyAutoTimer) return;
+    clearInterval(funnyAutoTimer);
+    funnyAutoTimer = null;
+  }
+
+  function startFunnyAuto() {
+    stopFunnyAuto();
+    if (roomId !== 'funny' || roomCount('funny') <= 1) return;
+    funnyAutoTimer = setInterval(() => {
+      if (current !== 'scene-room' || roomId !== 'funny') return;
+      advanceFunny(true);
+    }, 3400);
+  }
+
+  function funnyTransitionStyle(idx) {
+    const styles = ['pop', 'shred', 'puzzle', 'flip'];
+    return styles[idx % styles.length];
+  }
+
+  async function funnyOut(style) {
+    if (!window.gsap) return;
     const page = $('bookPage');
-    page.classList.remove('dragging');
-    if (!animated || !window.gsap) {
-      page.style.transform = '';
+    const media = ['#bookFront', '#bookBack', '#bookFrontPh', '#bookBackPh'];
+    if (style === 'shred') {
+      await new Promise((res) => gsap.to(page, {
+        opacity: 0,
+        clipPath: 'inset(0 49% 0 49%)',
+        duration: 0.4,
+        ease: 'power3.in',
+        onComplete: res,
+      }));
+      gsap.set(page, { clipPath: 'none' });
       return;
     }
-    gsap.to(page, {
-      rotateY: 0,
-      x: 0,
-      duration: 0.22,
-      ease: 'power2.out',
-      onComplete: () => { page.style.transform = ''; },
-    });
+    if (style === 'puzzle') {
+      await new Promise((res) => gsap.to(media, {
+        opacity: 0,
+        x: () => (Math.random() - 0.5) * 180,
+        y: () => (Math.random() - 0.5) * 130,
+        rotation: () => (Math.random() - 0.5) * 40,
+        duration: 0.45,
+        ease: 'power2.in',
+        onComplete: res,
+      }));
+      gsap.set(media, { clearProps: 'x,y,rotation' });
+      return;
+    }
+    if (style === 'flip') {
+      await new Promise((res) => gsap.to(page, { rotateY: -170, opacity: 0, duration: 0.6, ease: 'power2.inOut', onComplete: res }));
+      gsap.set(page, { rotateY: 0 });
+      return;
+    }
+    await new Promise((res) => gsap.to(page, { scale: 0.74, opacity: 0, duration: 0.36, ease: 'back.in(1.2)', onComplete: res }));
   }
 
-  function bindFunnySwipe() {
-    const wrap = $('bookView');
-    if (!wrap || wrap.dataset.swipeBound === '1') return;
-    wrap.dataset.swipeBound = '1';
-
-    const start = (e) => {
-      if (roomId !== 'funny' || isFlipping) return;
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      funnySwipe = {
-        active: true,
-        pointerId: e.pointerId,
-        startX: e.clientX,
-        startY: e.clientY,
-        dx: 0,
-      };
-      wrap.setPointerCapture(e.pointerId);
-      $('bookPage').classList.add('dragging');
-    };
-
-    const move = (e) => {
-      if (!funnySwipe?.active || funnySwipe.pointerId !== e.pointerId) return;
-      const dx = e.clientX - funnySwipe.startX;
-      const dy = e.clientY - funnySwipe.startY;
-      funnySwipe.dx = dx;
-      if (Math.abs(dy) > Math.abs(dx) * 1.25) return;
-      const clamped = Math.max(-110, Math.min(110, dx));
-      $('bookPage').style.transform = `rotateY(${clamped / 2.4}deg) translateX(${clamped * 0.08}px)`;
-    };
-
-    const end = (e) => {
-      if (!funnySwipe?.active || funnySwipe.pointerId !== e.pointerId) return;
-      const dx = funnySwipe.dx;
-      funnySwipe.active = false;
-      try { wrap.releasePointerCapture(e.pointerId); } catch (_) {}
-      if (dx <= -68) {
-        resetFunnyDrag(false);
-        advanceFunny();
-      } else if (dx >= 68) {
-        if (slide > 0) {
-          resetFunnyDrag(false);
-          retreatFunny();
-        } else if (window.gsap) {
-          resetFunnyDrag(false);
-          gsap.fromTo($('bookPage'), { x: -8 }, { x: 0, duration: 0.3, ease: 'elastic.out(1,.5)' });
-        }
-      } else {
-        resetFunnyDrag();
-      }
-    };
-
-    wrap.addEventListener('pointerdown', start);
-    wrap.addEventListener('pointermove', move);
-    wrap.addEventListener('pointerup', end);
-    wrap.addEventListener('pointercancel', end);
+  async function funnyIn(style) {
+    if (!window.gsap) return;
+    const page = $('bookPage');
+    const media = ['#bookFront', '#bookBack', '#bookFrontPh', '#bookBackPh'];
+    if (style === 'shred') {
+      await new Promise((res) => gsap.fromTo(page, {
+        opacity: 0,
+        clipPath: 'inset(0 49% 0 49%)',
+      }, {
+        opacity: 1,
+        clipPath: 'inset(0 0 0 0)',
+        duration: 0.45,
+        ease: 'power3.out',
+        onComplete: res,
+      }));
+      gsap.set(page, { clipPath: 'none' });
+      return;
+    }
+    if (style === 'puzzle') {
+      await new Promise((res) => gsap.fromTo(media, {
+        opacity: 0,
+        x: () => (Math.random() - 0.5) * 190,
+        y: () => (Math.random() - 0.5) * 130,
+        rotation: () => (Math.random() - 0.5) * 45,
+      }, {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        rotation: 0,
+        duration: 0.5,
+        stagger: 0.04,
+        ease: 'back.out(1.5)',
+        onComplete: res,
+      }));
+      return;
+    }
+    if (style === 'flip') {
+      await new Promise((res) => gsap.fromTo(page, { rotateY: 170, opacity: 0 }, {
+        rotateY: 0,
+        opacity: 1,
+        duration: 0.55,
+        ease: 'power2.out',
+        onComplete: res,
+      }));
+      return;
+    }
+    await new Promise((res) => gsap.fromTo(page, { scale: 1.24, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.46, ease: 'back.out(1.5)', onComplete: res }));
   }
 
   async function setupFunny() {
     await loadBookFront(0);
     await loadBookBack(1);
-    bindFunnySwipe();
-    $('roomNext').textContent = C.slots.funny <= 2 ? 'clear room' : 'flip ↙';
+    $('roomNext').textContent = roomCount('funny') <= 1 ? 'clear room' : 'skip';
     setFunnyMessage(0);
     if (window.gsap) {
-      gsap.fromTo($('bookPage'), { opacity: 0, rotateY: -90 }, { opacity: 1, rotateY: 0, duration: 0.8, ease: 'power3.out' });
-      gsap.fromTo($('stickman'), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.5, delay: 0.5, ease: 'elastic.out(1,.5)' });
+      gsap.fromTo($('bookPage'), { opacity: 0, y: 32, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out' });
+      gsap.fromTo($('stickman'), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.5, delay: 0.3, ease: 'elastic.out(1,.5)' });
     }
+    startFunnyAuto();
   }
 
   async function loadBookFront(idx) {
-    const src = await resolveImage('funny', idx + 1);
-    const img = $('bookFront'), ph = $('bookFrontPh');
-    if (src !== PH) { img.src = src; img.classList.remove('hidden'); ph.classList.add('hidden'); }
-    else { img.classList.add('hidden'); ph.classList.remove('hidden'); ph.textContent = `funny · 0${idx + 1}`; }
-    $('bookFrontCap').textContent = C.copy.rooms.funny.lines[idx % C.copy.rooms.funny.lines.length];
+    const src = await roomImage('funny', idx);
+    const img = $('bookFront');
+    const ph = $('bookFrontPh');
+    if (src !== PH) {
+      img.src = src;
+      img.classList.remove('hidden');
+      ph.classList.add('hidden');
+    } else {
+      img.classList.add('hidden');
+      ph.classList.remove('hidden');
+      ph.textContent = `funny · ${String(idx + 1).padStart(2, '0')}`;
+    }
+    $('bookFrontCap').textContent = roomCaption('funny', idx);
   }
 
   async function loadBookBack(idx) {
-    const max = C.slots.funny;
-    if (idx >= max) { $('bookBack').classList.add('hidden'); $('bookBackPh').classList.add('hidden'); return; }
-    const src = await resolveImage('funny', idx + 1);
-    const img = $('bookBack'), ph = $('bookBackPh');
-    if (src !== PH) { img.src = src; img.classList.remove('hidden'); ph.classList.add('hidden'); }
-    else { img.classList.add('hidden'); ph.classList.remove('hidden'); ph.textContent = `funny · 0${idx + 1}`; }
-    $('bookBackCap').textContent = C.copy.rooms.funny.lines[idx % C.copy.rooms.funny.lines.length];
+    const max = roomCount('funny');
+    if (idx >= max) {
+      $('bookBack').classList.add('hidden');
+      $('bookBackPh').classList.add('hidden');
+      return;
+    }
+    const src = await roomImage('funny', idx);
+    const img = $('bookBack');
+    const ph = $('bookBackPh');
+    if (src !== PH) {
+      img.src = src;
+      img.classList.remove('hidden');
+      ph.classList.add('hidden');
+    } else {
+      img.classList.add('hidden');
+      ph.classList.remove('hidden');
+      ph.textContent = `funny · ${String(idx + 1).padStart(2, '0')}`;
+    }
+    $('bookBackCap').textContent = roomCaption('funny', idx);
   }
 
-  async function advanceFunny() {
+  async function advanceFunny(fromAuto = false) {
     if (isFlipping) return;
-    const max = C.slots.funny;
+    stopFunnyAuto();
+    const max = roomCount('funny');
     const nextSlide = slide + 1;
-
     if (nextSlide >= max) {
       stats.rooms.add('funny');
       roomCompleteFx('funny');
       if (window.gsap) gsap.to($('stickman'), { rotation: 720, scale: 0, duration: 0.6 });
-      await wait(900);
-      show('scene-hub', 'fade'); refreshHub(); return;
+      await wait(860);
+      show('scene-hub', 'fade');
+      refreshHub();
+      return;
     }
 
     isFlipping = true;
-    if (window.gsap) {
-      $('stickman').style.animation = 'none';
-      gsap.to($('stickman'), { x: 20, rotation: 30, duration: 0.25 });
-    }
-
-    gsap.to($('bookPage'), {
-      rotateY: -180, duration: 0.72, ease: 'power2.inOut',
-      onComplete: async () => {
-        slide = nextSlide;
-        await loadBookFront(slide);
-        gsap.set($('bookPage'), { rotateY: 0 });
-        await loadBookBack(slide + 1);
-        setFunnyMessage(slide);
-        $('roomNext').textContent = slide >= max - 1 ? 'clear room' : 'flip ↙';
-        if (window.gsap) { $('stickman').style.animation = ''; gsap.to($('stickman'), { x: 0, rotation: 0, duration: 0.3 }); }
-        isFlipping = false;
-        vibe(20);
-      },
-    });
-  }
-
-  async function retreatFunny() {
-    if (isFlipping || slide <= 0) return;
-    const max = C.slots.funny;
-    const prevSlide = slide - 1;
-    isFlipping = true;
-
-    if (window.gsap) {
-      $('stickman').style.animation = 'none';
-      gsap.to($('stickman'), { x: -20, rotation: -25, duration: 0.2 });
-      gsap.to($('bookPage'), {
-        rotateY: 180,
-        duration: 0.62,
-        ease: 'power2.inOut',
-        onComplete: async () => {
-          slide = prevSlide;
-          await loadBookFront(slide);
-          gsap.set($('bookPage'), { rotateY: 0 });
-          await loadBookBack(slide + 1);
-          setFunnyMessage(slide);
-          $('roomNext').textContent = slide >= max - 1 ? 'clear room' : 'flip ↙';
-          $('stickman').style.animation = '';
-          gsap.to($('stickman'), { x: 0, rotation: 0, duration: 0.3 });
-          isFlipping = false;
-          vibe(18);
-        },
-      });
-    } else {
-      slide = prevSlide;
+    const style = funnyTransitionStyle(nextSlide);
+    if (window.gsap) $('stickman').style.animation = 'none';
+    try {
+      await funnyOut(style);
+      slide = nextSlide;
       await loadBookFront(slide);
       await loadBookBack(slide + 1);
       setFunnyMessage(slide);
+      $('roomNext').textContent = slide >= max - 1 ? 'clear room' : (fromAuto ? 'skip' : 'next');
+      await funnyIn(style);
+      if (window.gsap) gsap.fromTo($('stickman'), { x: -10 }, { x: 0, duration: 0.35, ease: 'back.out(1.6)' });
+      vibe(18);
+    } finally {
+      if (window.gsap) $('stickman').style.animation = '';
       isFlipping = false;
+      if (current === 'scene-room' && roomId === 'funny') startFunnyAuto();
     }
   }
 
   /* FLIRTY — pop-out */
   async function setupFlirty() {
     await loadFlirty(0);
-    $('roomNext').textContent = C.slots.flirty <= 1 ? 'clear room' : 'next';
-    $('roomMsg').textContent = C.copy.rooms.flirty.lines[0];
+    $('roomNext').textContent = roomCount('flirty') <= 1 ? 'clear room' : 'next';
+    $('roomMsg').textContent = roomCaption('flirty', 0);
   }
 
   async function loadFlirty(idx) {
-    const src = await resolveImage('flirty', idx + 1);
+    const src = await roomImage('flirty', idx);
     const img = $('popoutImg'), ph = $('popoutPh'), bg = $('flirtyBg');
+    const line = roomCaption('flirty', idx);
     if (src !== PH) {
       img.src = src;
       img.classList.remove('hidden');
@@ -1520,10 +1702,10 @@
     } else {
       img.classList.add('hidden');
       ph.classList.remove('hidden');
-      ph.textContent = C.copy.rooms.flirty.lines[idx % C.copy.rooms.flirty.lines.length];
+      ph.textContent = line;
       bg.style.backgroundImage = 'none';
     }
-    $('popoutLabel').textContent = C.copy.rooms.flirty.lines[idx % C.copy.rooms.flirty.lines.length];
+    $('popoutLabel').textContent = line;
     if (idx === 0) mascotSay(C.copy.mascot.flirty, '◆');
 
     if (window.gsap) {
@@ -1535,7 +1717,7 @@
   }
 
   async function advanceFlirty() {
-    const max = C.slots.flirty;
+    const max = roomCount('flirty');
     const nextSlide = slide + 1;
 
     if (nextSlide >= max) {
@@ -1554,17 +1736,18 @@
 
     slide = nextSlide;
     await loadFlirty(slide);
-    $('roomMsg').textContent = C.copy.rooms.flirty.lines[slide % C.copy.rooms.flirty.lines.length];
+    $('roomMsg').textContent = roomCaption('flirty', slide);
     $('roomNext').textContent = slide >= max - 1 ? 'clear room' : 'next';
   }
 
   /* ROMANTIC — polaroid */
   async function setupRomantic() {
     stopRomanticAuto();
+    await showRomanticChatIntro();
     await showRomanticHeartIntro();
     await loadRomantic(0);
-    $('roomNext').textContent = C.slots.romantic <= 1 ? 'clear room' : 'next';
-    $('roomMsg').textContent = C.copy.rooms.romantic.lines[0];
+    $('roomNext').textContent = roomCount('romantic') <= 1 ? 'clear room' : 'next';
+    $('roomMsg').textContent = roomCaption('romantic', 0);
     if (window.gsap) gsap.fromTo($('polaroidView'), { opacity: 0, y: 40, rotation: -5 }, { opacity: 1, y: 0, rotation: -1.5, duration: 0.8, ease: 'power3.out' });
     startRomanticAuto();
   }
@@ -1577,11 +1760,51 @@
 
   function startRomanticAuto() {
     stopRomanticAuto();
-    if (roomId !== 'romantic' || C.slots.romantic <= 1) return;
+    if (roomId !== 'romantic' || roomCount('romantic') <= 1) return;
     romanticAutoTimer = setInterval(() => {
       if (current !== 'scene-room' || roomId !== 'romantic') return;
       advanceRomantic(true);
     }, 4200);
+  }
+
+  async function showRomanticChatIntro() {
+    const host = $('romanticChatIntro');
+    const bubbles = Array.isArray(C.copy.rooms.romantic.chatIntro) ? C.copy.rooms.romantic.chatIntro : [];
+    if (!host || bubbles.length === 0) return;
+    host.innerHTML = '';
+    host.classList.remove('hidden');
+
+    bubbles.forEach((item, idx) => {
+      const who = typeof item === 'object' && item?.who === 'her' ? 'her' : (idx % 2 ? 'her' : 'him');
+      const text = typeof item === 'string' ? item : item?.text;
+      if (!text) return;
+      const b = document.createElement('p');
+      b.className = `chat-intro ${who}`;
+      b.textContent = text;
+      host.appendChild(b);
+    });
+
+    const nodes = [...host.querySelectorAll('.chat-intro')];
+    if (!nodes.length) {
+      host.classList.add('hidden');
+      return;
+    }
+
+    if (window.gsap) {
+      nodes.forEach((node, idx) => {
+        gsap.fromTo(node,
+          { opacity: 0, y: 20, x: node.classList.contains('her') ? 20 : -20, scale: 0.94 },
+          { opacity: 1, y: 0, x: 0, scale: 1, duration: 0.45, delay: idx * 0.55, ease: 'power2.out' });
+      });
+      await wait(nodes.length * 550 + 1150);
+      gsap.to(nodes, { opacity: 0, y: -8, duration: 0.4, stagger: 0.08, ease: 'power1.in' });
+      await wait(520);
+    } else {
+      await wait(1800);
+    }
+
+    host.classList.add('hidden');
+    host.innerHTML = '';
   }
 
   async function showRomanticHeartIntro() {
@@ -1620,15 +1843,16 @@
   }
 
   async function loadRomantic(idx) {
-    const src = await resolveImage('romantic', idx + 1);
+    const src = await roomImage('romantic', idx);
     const img = $('roomPic'), ph = $('roomPh'), pol = $('polaroidView');
     pol.classList.remove('upside', 'blurred', 'develop');
     $('scratch').classList.add('hidden');
     $('scratch').style.pointerEvents = 'none';
+    const line = roomCaption('romantic', idx);
 
     if (src !== PH) { img.src = src; img.classList.remove('hidden'); ph.classList.add('hidden'); }
     else { img.classList.add('hidden'); ph.classList.remove('hidden'); ph.textContent = `romantic · 0${idx + 1}`; }
-    $('roomCap').textContent = C.her.nicknames[idx % C.her.nicknames.length] || C.her.call;
+    $('roomCap').textContent = line;
 
     const target = src !== PH ? img : ph;
     await photoPersonality(target, idx);
@@ -1711,7 +1935,7 @@
     if (roomId !== 'romantic' || romanticBusy) return;
     romanticBusy = true;
     stopRomanticAuto();
-    const max = C.slots.romantic;
+    const max = roomCount('romantic');
     const nextSlide = slide + 1;
     try {
       if (nextSlide >= max) {
@@ -1729,7 +1953,7 @@
       }
       slide = nextSlide;
       await loadRomantic(slide);
-      $('roomMsg').textContent = C.copy.rooms.romantic.lines[slide % C.copy.rooms.romantic.lines.length];
+      $('roomMsg').textContent = roomCaption('romantic', slide);
       $('roomNext').textContent = slide >= max - 1 ? 'clear room' : 'next';
       if (window.gsap) gsap.fromTo($('polaroidView'), { opacity: 0, x: 300 }, { opacity: 1, x: 0, duration: fromAuto ? 0.62 : 0.5, ease: 'power3.out' });
     } finally {
@@ -1740,6 +1964,7 @@
 
   /* room nav */
   function leaveRoom() {
+    stopFunnyAuto();
     stopRomanticAuto();
     show('scene-hub', 'fade');
     refreshHub();
@@ -1757,16 +1982,16 @@
   async function openUs() {
     show('scene-us', 'left');
     window.setParticleColor && window.setParticleColor('#7c2a38');
-    $('rotateCopy').textContent = 'Tap each star to reveal a memory.';
+    $('rotateCopy').textContent = 'Follow the route. Tap each checkpoint in order.';
     $('rotateSkip').textContent = 'start';
     $('rotateGate').classList.add('hidden');
 
-    const labels = ['THEN', 'THEN', 'THEN', 'NOW', 'NOW', 'NOW', 'US', 'US'];
+    const labels = ['ORIGIN', 'SPARK', 'DRIFT', 'GLOW', 'PULSE', 'NOVA', 'AURORA', 'ECHO', 'VOW', 'FOREVER'];
     const allPoints = [
-      { x: 11, y: 74 }, { x: 26, y: 48 }, { x: 39, y: 67 }, { x: 52, y: 34 },
-      { x: 64, y: 59 }, { x: 77, y: 39 }, { x: 88, y: 63 }, { x: 53, y: 83 },
+      { x: 10, y: 72 }, { x: 22, y: 52 }, { x: 32, y: 70 }, { x: 43, y: 43 }, { x: 54, y: 62 },
+      { x: 64, y: 37 }, { x: 74, y: 56 }, { x: 83, y: 32 }, { x: 90, y: 58 }, { x: 55, y: 82 },
     ];
-    const total = Math.min(C.slots.us, allPoints.length);
+    const total = Math.min(roomCount('us'), allPoints.length);
     const points = allPoints.slice(0, total);
     usTarget = total;
 
@@ -1778,6 +2003,7 @@
     const text = $('constText');
     const tag = $('constTag');
     const chats = $('constChats');
+    const journey = $('journeyStatus');
     card.classList.add('hidden');
     linesSvg.innerHTML = '';
     map.innerHTML = '';
@@ -1785,8 +2011,8 @@
     const memories = [];
     for (let i = 1; i <= total; i++) {
       memories.push({
-        src: await resolveImage('us', i),
-        line: C.copy.rooms.us.lines[(i - 1) % C.copy.rooms.us.lines.length],
+        src: await roomImage('us', i - 1),
+        line: roomCaption('us', i - 1),
         label: labels[i - 1] || 'US',
       });
     }
@@ -1794,7 +2020,15 @@
     const updateDoneBtn = () => {
       const done = usFound.size >= total;
       $('usDone').disabled = !done;
-      $('usDone').textContent = done ? 'room cleared ✓' : `discover all stars ${usFound.size}/${total}`;
+      $('usDone').textContent = done ? 'journey complete ✓' : `checkpoint ${usFound.size}/${total}`;
+    };
+
+    const updateJourney = () => {
+      if (!journey) return;
+      const stop = usFound.size >= total
+        ? 'FOREVER'
+        : (labels[Math.min(usFound.size, labels.length - 1)] || 'NEXT');
+      journey.textContent = `ROUTE ${usFound.size}/${total} • ${stop}`;
     };
 
     const drawLines = () => {
@@ -1813,7 +2047,7 @@
 
     const renderMemory = (idx) => {
       const mem = memories[idx];
-      tag.textContent = `${mem.label} • MEMORY ${String(idx + 1).padStart(2, '0')}`;
+      tag.textContent = `${mem.label} • CHECKPOINT ${String(idx + 1).padStart(2, '0')}`;
       media.innerHTML = mem.src === PH
         ? `<div class="ph">us · ${String(idx + 1).padStart(2, '0')}</div>`
         : `<img src="${mem.src}" alt="${C.her.call || C.her.name}" />`;
@@ -1832,25 +2066,42 @@
         chats.classList.add('hidden');
       }
       card.classList.remove('hidden');
-      if (window.gsap) gsap.fromTo(card, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' });
+      if (window.gsap) gsap.fromTo(card, { opacity: 0, y: 18, x: 18 }, { opacity: 1, y: 0, x: 0, duration: 0.35, ease: 'power2.out' });
     };
 
     for (let i = 0; i < total; i++) {
       const star = document.createElement('button');
       star.type = 'button';
       star.className = 'star-node';
+      if (i > 0) star.classList.add('locked');
+      star.dataset.idx = String(i);
       star.style.left = points[i].x + '%';
       star.style.top = points[i].y + '%';
       star.innerHTML = `<span class="star-dot">✦</span><span class="star-label">${labels[i] || 'US'}</span>`;
       star.onclick = () => {
+        if (usFound.has(i)) {
+          renderMemory(i);
+          return;
+        }
+        if (i > 0 && !usFound.has(i - 1)) {
+          toast('Follow the route in order.');
+          vibe(14);
+          if (window.gsap) gsap.fromTo(star, { x: -6 }, { x: 0, duration: 0.35, ease: 'elastic.out(1,.4)' });
+          return;
+        }
         usFound.add(i);
         star.classList.add('found');
+        star.classList.remove('locked');
+        const next = map.querySelector(`.star-node[data-idx="${i + 1}"]`);
+        if (next) next.classList.remove('locked');
         drawLines();
         updateDoneBtn();
+        updateJourney();
         renderMemory(i);
         popHearts(6);
+        if (window.gsap) gsap.fromTo($('constellationShell'), { scale: 0.985 }, { scale: 1, duration: 0.3, ease: 'power1.out' });
         if (usFound.size >= total) {
-          toast('Memory constellation complete', 2800);
+          toast('Journey complete', 2800);
           burst({ particleCount: 80, spread: 70, colors: ['#6b1b2a', '#de5d6f', '#fff6f2'] });
         }
       };
@@ -1860,6 +2111,7 @@
 
     drawLines();
     updateDoneBtn();
+    updateJourney();
   }
 
   $('rotateSkip').onclick = () => $('rotateGate').classList.add('hidden');
@@ -1964,10 +2216,10 @@
     show('scene-finale', 'pop');
     $('finaleCap').textContent = C.copy.finaleCaption;
     const vid = $('finaleVid');
-    vid.src = 'Assets/videos/final/surprise.mp4';
+    vid.src = videoSource('finale', 'Assets/videos/final/surprise.mp4');
     const played = await vid.play().then(() => true).catch(() => false);
     if (!played) {
-      const fav = await resolveImage('us', 1);
+      const fav = await roomImage('us', 0);
       vid.classList.add('hidden');
       if (fav !== PH) {
         const img = document.createElement('img');

@@ -1,8 +1,9 @@
 /* ============================================================
    OPERATION BIRTHDAY — mammacita / Quinn / Star
    From: Dzaddzzzy  (Pablo / Taku)
-   Edit messages here. Drop photos as 01.jpg, 02.jpg, ...
-   in Assets/images/{funny,flirty,romantic,us,randoms}
+   Edit messages here. Media can be named like:
+   1...caption text.JPG, 2...caption text.jpg, etc.
+   in Assets/images/{funny,flirty,romantic,us,videocall}
    Videos: Assets/videos/intro/dance.mp4
            Assets/videos/final/surprise.mp4
    Chats:  Assets/chats/01.jpg  (we'll turn screenshots into bubbles)
@@ -31,12 +32,72 @@ window.BDAY = {
   dateDetails: "TBD — he will fill this in.",
 
   slots: {
-    funny: 6,
-    flirty: 5,
+    funny: 8,
+    flirty: 7,
     romantic: 6,
-    us: 8,
+    us: 10,
     randoms: 9,
     finale: 1,
+  },
+
+  media: {
+    funny: [
+      "1..yea just imagine this is the woman of my dreamsss.jpg",
+      "2...she can sleep yoo.JPG",
+      "3...l said she can sleep imiee.JPG",
+      "4...ya are not hearing me this one can .....JPG",
+      "5...ye l knoe what u wld hv said ska huya hko on top.jpg",
+      "6...donno where she got this from.jpg",
+      "7...yes this.PNG",
+      "8...bombastic what what...JPG",
+    ],
+    romantic: [
+      "1...damn the prettiest birthday gal you will ever see.JPG",
+      "2...give it up for my blushing birthday quinnnnnn.JPG",
+      "3... shez hella gorgeous did l tell you.jpg",
+      "4... you are loved mamma, keep aging like wine.jpg",
+      "5...oogh sorry wrong category.JPG",
+      "6... shez profesionally smart too.JPG",
+    ],
+    flirty: [
+      "1...lets kick this off with a mwaaa.JPG",
+      "2...and another one for my very dry lipsss.JPG",
+      "3... yo yo yo too fast forgot this is PG... also donno where the clothes are.JPG",
+      "4..ok lets cuddle now buh damn look at tt leg.JPG",
+      "5...lemme give u another angle of the leg zhhhhhhh.JPG",
+      "6....Proverbs 5 vs 19.png",
+      "7...and the burrrrrrrrrrrtttttyyyy aagh horaiti byeee.png",
+    ],
+    us: [
+      "1..our love was always written in the stars.png",
+      "2...That look tt makes me rethink wah l was doing with my life before her.png",
+      "3...l knoe l knoe just move on to the next.png",
+      "4... this is just beautiful birthday gal never let it go.JPG",
+      "5....keep holding it like this.JPG",
+      "6...you cant go wrong with this one.png",
+      "7..shez the best.JPG",
+      "8..look at these ladiesssss.PNG",
+      "9... the smiles say it all.JPG",
+      "10...till death do us apart.JPG",
+    ],
+    videocall: [
+      "IMG_5627.JPG",
+    ],
+    captchaHer: [
+      "idf.jpg",
+      "img2.jpg",
+      "ed5673fa-7c06-4449-ad5b-e9f77ecc4130.jpg",
+      "IMG_3048.JPG",
+    ],
+    captchaDecoys: [
+      "marsai 1.jfif",
+      "marsai 2.jfif",
+      "marsai 3.jfif",
+    ],
+  },
+  videos: {
+    intro: "Assets/videos/intro/bafdae dance.mp4",
+    finale: "Assets/videos/final/surprise.mp4",
   },
 
   copy: {
@@ -83,7 +144,7 @@ window.BDAY = {
       "And unfortunately…",
       "…we have HER.",
     ],
-    callName: "Meu Esapgou ",
+    callName: "Meu espaço seguro",
     callDecline: "you can't decline me.",
     danceStickers: [
       "THE GUEST OF HONOR HAS ENTERED",
@@ -187,7 +248,7 @@ window.BDAY = {
     pinReal: ["Fine. Since apparently I have to help you…", "MY AGE + YOUR AGE", "Put them together."],
     pinOk: ["Finally!", "I knew you could do it.", "Come on… let's look at some memories."],
     hubTitle: "Four sides of you.",
-    hubSub: "Choose your adventure.",
+    hubSub: "Choose a planet and travel.",
     rooms: {
       funny: {
         title: "FUNNY",
@@ -220,6 +281,10 @@ window.BDAY = {
       romantic: {
         title: "ROMANTIC",
         tag: "okay I'll behave… a little",
+        chatIntro: [
+          { who: "him", text: "Start with a chat bubble moment..." },
+          { who: "her", text: "I'll add the real chats here later 💜" },
+        ],
         lines: [
           "Some moments just stay with you.",
           "Some people make ordinary days feel different.",
