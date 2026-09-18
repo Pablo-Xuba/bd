@@ -4,11 +4,116 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>For mammacita</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Outfit:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,500;1,500&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Great+Vibes&family=Outfit:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,500;1,500&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css?v=pack11" />
+    <style>
+      #scene-captcha {
+        justify-content: center !important;
+        align-items: center !important;
+        background: #1a1a1a !important;
+      }
+      #scene-captcha .rc-widget {
+        width: min(100%, 304px) !important;
+        background: #fff !important;
+        color: #000 !important;
+        font-family: Roboto, Arial, sans-serif !important;
+        border: 1px solid #d3d3d3 !important;
+        border-radius: 2px !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,.28) !important;
+        overflow: hidden !important;
+      }
+      #scene-captcha .rc-head {
+        background: #1a73e8 !important;
+        color: #fff !important;
+        padding: 24px 16px 16px !important;
+        min-height: 96px !important;
+        text-align: left !important;
+      }
+      #scene-captcha .rc-prompt,
+      #scene-captcha #captchaTask {
+        margin: 0 !important;
+        font-size: 16px !important;
+        font-weight: 400 !important;
+        line-height: 1.35 !important;
+        color: #fff !important;
+        letter-spacing: 0 !important;
+        text-transform: none !important;
+      }
+      #scene-captcha .rc-sub,
+      #scene-captcha #captchaTitle {
+        margin: 8px 0 0 !important;
+        font-size: 22px !important;
+        font-weight: 500 !important;
+        line-height: 1.2 !important;
+        color: #fff !important;
+        letter-spacing: 0 !important;
+        text-transform: none !important;
+        opacity: 1 !important;
+      }
+      #scene-captcha .rc-grid,
+      #scene-captcha #captchaGrid {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
+        margin: 0 !important;
+        padding: 4px !important;
+        background: #fff !important;
+      }
+      #scene-captcha .tile {
+        appearance: none !important;
+        aspect-ratio: 1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        overflow: hidden !important;
+        background: #e6e6e6 !important;
+        box-shadow: none !important;
+        transform: none !important;
+      }
+      #scene-captcha .tile img,
+      #scene-captcha .tile .ph {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        display: block !important;
+        border-radius: 0 !important;
+      }
+      #scene-captcha .tile.on {
+        outline: 2px solid #1a73e8 !important;
+        outline-offset: -2px !important;
+      }
+      #scene-captcha .rc-foot {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        padding: 8px 10px !important;
+        background: #fff !important;
+        border-top: 1px solid #e0e0e0 !important;
+      }
+      #scene-captcha .rc-verify,
+      #scene-captcha #captchaGo {
+        background: #1a73e8 !important;
+        color: #fff !important;
+        border: 0 !important;
+        border-radius: 2px !important;
+        padding: 10px 18px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        letter-spacing: .04em !important;
+        text-transform: uppercase !important;
+        width: auto !important;
+        box-shadow: none !important;
+      }
+      #scene-captcha .rc-logo b { color: #555 !important; }
+      #scene-captcha .rc-logo small { color: #999 !important; }
+      #scene-captcha #captchaMsg { color: #f2d5c5; text-align: center; }
+    </style>
   </head>
   <body>
     <div id="stage">
@@ -33,6 +138,23 @@
           <p class="reel-chapter mono" id="reelNum"></p>
           <h2 class="reel-title" id="reelTitle"></h2>
           <p class="reel-sub muted" id="reelSub"></p>
+        </div>
+        <div id="movieCredits" class="hidden" aria-hidden="true">
+          <div class="credits-letterbox top"></div>
+          <div class="credits-letterbox bottom"></div>
+          <div class="credits-track" id="creditsTrack"></div>
+          <button class="credits-skip" id="creditsSkip" type="button">skip</button>
+          <div class="credits-end hidden" id="creditsEnd">
+            <p class="tiny">end of picture</p>
+            <h2 class="script gold" id="creditsEndTitle">Happy birthday.</h2>
+            <button class="btn" id="berserkerGo" type="button">go berserker</button>
+            <button class="btn ghost" id="creditsBack" type="button">back to the galaxy</button>
+          </div>
+        </div>
+        <div id="berserkerLayer" class="hidden" aria-hidden="true">
+          <div id="berserkerStamps"></div>
+          <p class="berserker-title" id="berserkerTitle">BERSERKER</p>
+          <button class="btn" id="berserkerStop" type="button">ok that's enough</button>
         </div>
         <div id="pinGranted" class="hidden">
           <p class="mono gold" id="pinGrantedTxt"></p>
@@ -102,6 +224,7 @@
 
         <!-- HEY -->
         <section class="scene" id="scene-hey">
+          <button class="heart-egg" data-heart="5" style="left:14px;bottom:28px">♥</button>
           <button class="skip" id="skipHey">skip</button>
           <div class="center">
             <p class="line big" id="heyLine"></p>
@@ -111,6 +234,7 @@
 
         <!-- BOOM -->
         <section class="scene" id="scene-boom">
+          <button class="heart-egg" data-heart="6" style="right:18px;top:22px">♥</button>
           <div class="center" style="width:100%">
             <p class="tiny" id="boomTapName" style="cursor:pointer;letter-spacing:.35em">MAMMACITA</p>
             <h1 class="name-hero" id="boomTitle"></h1>
@@ -163,6 +287,7 @@
 
         <!-- DANCE -->
         <section class="scene" id="scene-dance">
+          <button class="heart-egg" data-heart="7" style="left:16px;top:18px">♥</button>
           <div class="video-frame" id="danceFrame">
             <video id="danceVid" playsinline webkit-playsinline></video>
             <div class="ph hidden" id="dancePh">
@@ -176,6 +301,7 @@
 
         <!-- LOVE TRAP -->
         <section class="scene" id="scene-love">
+          <button class="heart-egg" data-heart="8" style="right:18px;top:16px">♥</button>
           <p class="tiny">before we continue</p>
           <h1 class="love-q" style="margin-top:12px" id="loveQ"></h1>
           <p class="trap-msg" id="trapMsg" style="margin-top:12px"></p>
@@ -194,15 +320,34 @@
 
         <!-- CAPTCHA -->
         <section class="scene" id="scene-captcha">
-          <p class="tiny" id="captchaTitle"></p>
-          <h2 id="captchaTask" style="margin-top:10px;font-size:1.1rem;line-height:1.35"></h2>
-          <div class="grid9" id="captchaGrid"></div>
-          <p class="muted" id="captchaMsg" style="min-height:1.4em;margin-bottom:8px"></p>
-          <button class="btn wide" id="captchaGo">verify</button>
+          <button class="heart-egg" data-heart="9" style="left:12px;top:12px">♥</button>
+          <div class="rc-widget" id="captchaWidget">
+            <div class="rc-head">
+              <p class="rc-prompt" id="captchaTask"></p>
+              <p class="rc-sub" id="captchaTitle"></p>
+            </div>
+            <div class="grid9 rc-grid" id="captchaGrid"></div>
+            <div class="rc-foot">
+              <div class="rc-tools">
+                <button class="rc-icon" id="captchaRefresh" type="button" aria-label="refresh">↻</button>
+                <span class="rc-icon" aria-hidden="true">ⓘ</span>
+                <div class="rc-logo">
+                  <span class="rc-mark"></span>
+                  <div>
+                    <b>reCAPTCHA</b>
+                    <small>Privacy · Terms</small>
+                  </div>
+                </div>
+              </div>
+              <button class="rc-verify" id="captchaGo" type="button">VERIFY</button>
+            </div>
+          </div>
+          <p class="muted" id="captchaMsg" style="min-height:1.4em;margin-top:12px"></p>
         </section>
 
         <!-- PERMISSION -->
         <section class="scene" id="scene-perm">
+          <button class="heart-egg" data-heart="16" style="left:14px;top:16px">♥</button>
           <div class="center" style="width:100%">
             <div class="perm">
               <h3>Safari / Chrome</h3>
@@ -219,6 +364,7 @@
 
         <!-- PIN -->
         <section class="scene" id="scene-pin">
+          <button class="heart-egg" data-heart="10" style="right:16px;top:18px">♥</button>
           <p class="tiny" id="pinIntro" style="min-height:1.2em"></p>
           <div class="vault" id="vault">🔐</div>
           <h2>Enter the 4-digit PIN</h2>
@@ -236,23 +382,32 @@
           <p class="muted" id="hubSub"></p>
           <div class="candles-meter" id="meter"></div>
           <div class="world-map" id="worldMap">
+            <div class="map-orbit outer"></div>
+            <div class="map-orbit inner"></div>
+            <span class="map-shoot" aria-hidden="true"></span>
             <div class="map-glow" id="mapGlow"></div>
             <button class="map-node romantic" data-room="romantic"><span class="map-icon">💜</span><b>ROMANTIC</b><span class="map-tag"></span></button>
             <button class="map-node funny" data-room="funny"><span class="map-icon">😄</span><b>FUNNY</b><span class="map-tag"></span></button>
-            <div class="map-you"><span></span></div>
+            <div class="map-you" id="mapYou"><span></span></div>
             <button class="map-node flirty locked" data-room="flirty"><span class="map-icon">😋</span><b>FLIRTY</b><span class="map-tag"></span></button>
             <button class="map-node us" data-room="us"><span class="map-icon">🤗</span><b>US</b><span class="map-tag"></span></button>
             <button class="map-node capsule locked" data-room="capsule"><span class="map-icon">⏳</span><b>30 DAYS</b><span class="map-tag"></span></button>
+            <button class="map-node sun hidden" data-room="gift" id="sunPlanet"><span class="map-icon">☀</span><b>ONE LAST THING</b><span class="map-tag"></span></button>
+            <div class="map-dust" aria-hidden="true"></div>
           </div>
-          <p class="hub-complete hidden" id="hubComplete"></p>
-          <button class="btn hidden wide" id="giftDoor" style="margin-top:16px">one last thing</button>
+          <div class="hub-dock">
+            <p class="hub-complete hidden" id="hubComplete"></p>
+            <button class="btn hidden wide" id="receiptDoor" type="button">print the receipts</button>
+            <button class="btn ghost hidden wide" id="giftDoor" type="button">one last thing</button>
+          </div>
         </section>
 
         <!-- FLIRTY GATE — together / forever -->
         <section class="scene" id="scene-flirty-gate">
+          <button class="heart-egg" data-heart="11" style="left:16px;top:18px">♥</button>
           <div class="center" style="width:100%">
             <p class="tiny">one more lock</p>
-            <p class="together-word script gold" id="togetherWord">together</p>
+            <p class="together-word gold" id="togetherWord">TOGETHER</p>
             <p class="muted" id="flirtyGateHint" style="margin-top:8px"></p>
             <input id="flirtyPassInput" class="word-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false" />
             <p class="trap-msg" id="flirtyGateMsg" style="margin-top:12px;min-height:1.4em"></p>
@@ -263,6 +418,7 @@
 
         <!-- ROOM — funny / flirty / romantic -->
         <section class="scene" id="scene-room">
+          <button class="heart-egg" data-heart="15" style="right:14px;top:10px">♥</button>
           <p class="tiny" id="roomTag"></p>
           <h2 id="roomTitle" style="margin-bottom:4px"></h2>
 
@@ -302,7 +458,11 @@
             <div class="cap" id="roomCap"></div>
           </div>
           <div id="romanticHeartIntro" class="hidden" aria-hidden="true"></div>
-          <div id="romanticChatIntro" class="hidden" aria-hidden="true"></div>
+          <div id="romanticChatIntro" class="hidden" aria-hidden="true">
+            <p class="chat-thread-label" id="chatThreadLabel"></p>
+            <div class="chat-stream" id="chatStream"></div>
+            <button class="skip" id="chatSkip" type="button">skip chats</button>
+          </div>
 
           <p class="slide-msg" id="roomMsg"></p>
           <div class="nav-row">
@@ -313,6 +473,7 @@
 
         <!-- US TIMELINE -->
         <section class="scene" id="scene-us">
+          <button class="heart-egg" data-heart="12" style="right:14px;top:16px">♥</button>
           <div class="rotate-gate hidden" id="rotateGate">
             <p style="font-size:2.4rem">↻</p>
             <p id="rotateCopy"></p>
@@ -341,7 +502,7 @@
         <section class="scene" id="scene-capsule">
           <div class="center">
             <p class="tiny">time capsule</p>
-            <h1 class="script gold" style="font-size:3.2rem">later, Star</h1>
+            <h1 class="script gold" style="font-size:3.2rem">later, boo</h1>
             <p id="capsuleCopy" class="line" style="margin-top:20px"></p>
             <button class="btn ghost" id="capsuleBack" style="margin-top:24px">back</button>
           </div>
@@ -349,6 +510,7 @@
 
         <!-- GIFT -->
         <section class="scene" id="scene-gift">
+          <button class="heart-egg" data-heart="13" style="left:16px;top:18px">♥</button>
           <div class="center" style="width:100%">
             <p class="line big" id="giftLine"></p>
             <div class="gift-box" id="giftBox">🎁</div>
@@ -382,13 +544,20 @@
         <!-- LETTER -->
         <section class="scene" id="scene-letter">
           <button class="heart-egg" data-heart="4" style="right:24px;top:12px">♥</button>
-          <div class="wax" id="wax">D</div>
-          <article class="letter" id="letterBody"></article>
+          <div class="cartoon-scroll">
+            <div class="scroll-curl top" aria-hidden="true"><i class="knob"></i><b class="tube"></b></div>
+            <div class="parchment">
+              <div class="wax" id="wax">D</div>
+              <article class="letter" id="letterBody"></article>
+            </div>
+            <div class="scroll-curl bottom" aria-hidden="true"><b class="tube"></b><i class="knob"></i></div>
+          </div>
           <button class="btn" id="letterGo" style="margin-top:16px">blow out the candles</button>
         </section>
 
         <!-- CANDLES -->
         <section class="scene" id="scene-candles">
+          <button class="heart-egg" data-heart="14" style="right:18px;top:14px">♥</button>
           <div class="center" style="width:100%">
             <p class="tiny" id="blowHint"></p>
             <div class="cake-stage">
@@ -408,7 +577,7 @@
 
         <!-- CREDITS -->
         <section class="scene" id="scene-credits">
-          <div class="center" style="width:100%">
+          <div class="credits-stack">
             <p class="tiny">issued to</p>
             <h1 class="stars-name script gold" id="creditName"></h1>
             <p id="endLine" class="line" style="margin-top:14px"></p>
@@ -423,7 +592,9 @@
               <div class="dc-montage" id="dcMontage"></div>
               <button class="btn ghost" id="dcBtn" style="margin-top:14px"></button>
             </div>
-            <button class="btn" id="waBtn" style="margin-top:16px">text Dzaddzzzy now.</button>
+            <button class="btn" id="endBerserker" style="margin-top:16px">go berserker</button>
+            <button class="btn" id="waBtn" style="margin-top:10px">text Dzaddzzzy now.</button>
+            <button class="btn" id="creditsHub" style="margin-top:10px">back to the galaxy</button>
             <button class="btn ghost" id="replayBtn" style="margin-top:10px">replay from start</button>
             <p class="tiny" id="theEnd" style="margin-top:22px;cursor:pointer"></p>
           </div>
@@ -434,7 +605,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="js/config.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/config.js?v=pack11"></script>
+    <script src="js/app.js?v=pack12"></script>
   </body>
 </html>

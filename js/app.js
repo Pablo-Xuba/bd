@@ -18,7 +18,7 @@
     declineAttempts: 0, cakeTaps: 0, flirtyPassAttempts: 0, rooms: new Set(),
     hearts: new Set(JSON.parse(localStorage.getItem('charity_hearts') || '[]')),
     started: Date.now(), yesFirst: false, nameTaps: 0, leftTab: 0,
-    finished: false,
+    finished: false, sunCleared: false, capsuleCleared: false,
   };
 
   let current = '', pin = '', helpStep = 0, roomId = 'funny', slide = 0;
@@ -31,10 +31,17 @@
   let planetWarping = false;
   let usFound = new Set();
   let usTarget = 0;
+  let usReturnTimer = null;
   let captchaAttempt = 0;
   let captchaFailCount = 0;
   let captchaRage = false;
   let captchaCaseHits = { correct: 0, wrong: 0, all: 0, mixed: 0, missed: 0, none: 0 };
+  let captchaCards = [];
+  let receiptFromHub = false;
+  let movieCreditsAfter = 'hub';
+  let berserkerPlayed = false;
+  let berserkerTimer = null;
+  let lastReceiptText = '';
   const PH = 'Assets/images/_placeholder.svg';
   const ROOM_KEYS = ['funny', 'flirty', 'romantic', 'us'];
   const ROOM_MEDIA = buildRoomMedia();
@@ -116,6 +123,7 @@
     'scene-flirty-gate': 'flirty',
     'scene-finale': 'celebration', 'scene-letter': 'emotional', 'scene-candles': 'celebration',
     'scene-receipt': 'playful', 'scene-credits': 'celebration',
+    'scene-movie-credits': 'emotional', 'scene-berserker': 'celebration',
   };
 
   function setPhase(id) {
@@ -531,7 +539,7 @@
     }
 
     for (const base of [...new Set(bases)]) {
-      for (const ext of ['jpg', 'jpeg', 'png', 'webp', 'jfif', 'JPG', 'PNG', 'JFIF']) {
+          for (const ext of ['jpg', 'jpeg', 'png', 'webp', 'jfif', 'JPG', 'JPEG', 'PNG', 'JFIF']) {
         const url = `Assets/images/${folder}/${base}.${ext}`;
         if (await exists(url)) return url;
       }
@@ -541,18 +549,28 @@
 
   function saveHearts() { localStorage.setItem('charity_hearts', JSON.stringify([...stats.hearts])); }
 
-  document.querySelectorAll('.heart-egg').forEach(btn => {
-    const id = btn.dataset.heart;
-    if (stats.hearts.has(id)) btn.classList.add('found');
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (stats.hearts.has(id)) return;
-      stats.hearts.add(id); btn.classList.add('found'); saveHearts();
-      const i = stats.hearts.size - 1;
-      toast(C.copy.secretHearts[Math.min(i, C.copy.secretHearts.length - 1)]);
-      if (stats.hearts.size >= 5) setTimeout(() => toast(C.copy.secretAll, 3400), 600);
+  function heartEggTotal() {
+    return document.querySelectorAll('.heart-egg').length;
+  }
+
+  function bindHeartEggs() {
+    document.querySelectorAll('.heart-egg').forEach(btn => {
+      if (btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      const id = btn.dataset.heart;
+      if (stats.hearts.has(id)) btn.classList.add('found');
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (stats.hearts.has(id)) return;
+        stats.hearts.add(id); btn.classList.add('found'); saveHearts();
+        const i = stats.hearts.size - 1;
+        toast(C.copy.secretHearts[Math.min(i, C.copy.secretHearts.length - 1)]);
+        if (stats.hearts.size >= heartEggTotal()) setTimeout(() => toast(C.copy.secretAll, 3400), 600);
+      });
     });
-  });
+  }
+
+  bindHeartEggs();
 
   /* ── COUNTDOWN ─────────────────────────────────── */
   function tickCount() {
@@ -954,23 +972,21 @@
   async function sceneCaptcha() {
     show('scene-captcha', 'up');
     window.setParticleColor && window.setParticleColor('#c43a52');
-    $('captchaTitle').textContent = C.copy.captchaTitle;
-    $('captchaTask').textContent = C.copy.captchaTask;
+    $('captchaTitle').textContent = C.copy.captchaTitle || 'the most beautiful girl in the world';
+    $('captchaTask').textContent = C.copy.captchaTask || 'Select the images with';
     $('captchaMsg').textContent = '';
     captchaAttempt = 0;
     captchaFailCount = 0;
     captchaRage = false;
     captchaCaseHits = { correct: 0, wrong: 0, all: 0, mixed: 0, missed: 0, none: 0 };
     $('scene-captcha').classList.remove('rage-mode');
-    const grid = $('captchaGrid');
-    grid.innerHTML = '';
+    captchaCards = await loadCaptchaCards();
+    renderCaptchaGrid(true);
+  }
 
-    // 4 real photos (catcha/her) + 3 decoys (catcha/marsai) by default.
-    const cards = [];
-    const herFiles = Array.isArray(C.media?.captchaHer) ? C.media.captchaHer.filter(Boolean) : [];
-    const decoyFiles = Array.isArray(C.media?.captchaDecoys) ? C.media.captchaDecoys.filter(Boolean) : [];
-    const realCount = herFiles.length || 4;
-    const decoyCount = decoyFiles.length || 3;
+  async function loadCaptchaCards() {
+    const herFiles = (Array.isArray(C.media?.captchaHer) ? C.media.captchaHer : []).filter(Boolean);
+    const decoyFiles = (Array.isArray(C.media?.captchaDecoys) ? C.media.captchaDecoys : []).filter(Boolean);
     const who = (C.her.call || C.her.name).toLowerCase();
 
     const buildCard = async (folder, file, fallbackKey) => {
@@ -981,27 +997,46 @@
       return resolveImage(folder, fallbackKey);
     };
 
-    for (let i = 1; i <= realCount; i++) {
-      cards.push({
-        correct: true,
-        src: await buildCard('catcha/her', herFiles[i - 1], i),
-        ph: `${C.her.call || C.her.name} ${i}`,
-      });
-    }
-    for (let i = 1; i <= decoyCount; i++) {
-      cards.push({
-        correct: false,
-        src: await buildCard('catcha/marsai', decoyFiles[i - 1], i),
-        ph: `not ${who} ${i}`,
-      });
-    }
+    const takeThree = async (folder, files, correct) => {
+      const out = [];
+      for (let i = 0; i < files.length && out.length < 3; i++) {
+        const src = await buildCard(folder, files[i], i + 1);
+        if (src === PH) continue;
+        out.push({
+          correct,
+          src,
+          ph: correct ? `${C.her.call || C.her.name} ${out.length + 1}` : `not ${who} ${out.length + 1}`,
+        });
+      }
+      for (let i = out.length; i < 3; i++) {
+        out.push({
+          correct,
+          src: await buildCard(folder, null, i + 1),
+          ph: correct ? `${C.her.call || C.her.name} ${i + 1}` : `not ${who} ${i + 1}`,
+        });
+      }
+      return out;
+    };
 
-    for (let i = cards.length - 1; i > 0; i--) {
+    const cards = [
+      ...await takeThree('catcha/her', herFiles, true),
+      ...await takeThree('catcha/marsai', decoyFiles, false),
+    ];
+    return cards.slice(0, 6);
+  }
+
+  function shuffleCaptchaCards() {
+    for (let i = captchaCards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [cards[i], cards[j]] = [cards[j], cards[i]];
+      [captchaCards[i], captchaCards[j]] = [captchaCards[j], captchaCards[i]];
     }
+  }
 
-    cards.forEach((card, idx) => {
+  function renderCaptchaGrid(animate) {
+    const grid = $('captchaGrid');
+    grid.innerHTML = '';
+    shuffleCaptchaCards();
+    captchaCards.slice(0, 6).forEach((card, idx) => {
       const b = document.createElement('button');
       b.className = 'tile';
       b.type = 'button';
@@ -1021,7 +1056,7 @@
 
       b.onclick = () => { b.classList.toggle('on'); vibe(15); };
       grid.appendChild(b);
-      if (window.gsap) gsap.fromTo(b, { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.3, delay: (idx + 1) * 0.04, ease: 'back.out(1.5)' });
+      if (animate && window.gsap) gsap.fromTo(b, { opacity: 0 }, { opacity: 1, duration: 0.18, delay: idx * 0.03 });
     });
   }
 
@@ -1133,6 +1168,13 @@
 
     $('captchaMsg').textContent = C.copy.captchaOk;
     setTimeout(scenePerm, 800);
+  };
+
+  $('captchaRefresh').onclick = () => {
+    if (current !== 'scene-captcha' || !captchaCards.length) return;
+    $('captchaMsg').textContent = '';
+    renderCaptchaGrid(true);
+    vibe(12);
   };
 
   /* ── PERMISSION ────────────────────────────────── */
@@ -1318,7 +1360,8 @@
       : 'locked';
 
     const capNode = document.querySelector('.map-node.capsule');
-    capNode.classList.toggle('locked', !capsuleOpen);
+    capNode.classList.toggle('locked', !capsuleOpen && stats.rooms.size < 4);
+    capNode.classList.toggle('done', stats.capsuleCleared);
     if (capsuleOpen) {
       document.querySelector('.map-node.capsule .map-tag').textContent = C.copy.datePhases.capsule;
     } else {
@@ -1327,20 +1370,44 @@
     }
 
     $('mapGlow').classList.toggle('lit', stats.rooms.size >= 4);
-    $('hubComplete').classList.toggle('hidden', stats.rooms.size < 4);
-    if (stats.rooms.size >= 4) {
+    const allFour = stats.rooms.has('flirty') && ['funny', 'romantic', 'us'].every(r => stats.rooms.has(r));
+    const extrasReady = stats.sunCleared && stats.capsuleCleared;
+    $('hubComplete').classList.toggle('hidden', !allFour);
+    if (allFour && extrasReady) {
       $('hubComplete').textContent = C.copy.hubComplete;
       if (!refreshHub._celebrated) {
         refreshHub._celebrated = true;
         burst({ particleCount: 40, spread: 60 });
       }
+    } else if (allFour && !stats.sunCleared && !stats.capsuleCleared) {
+      $('hubComplete').textContent = C.copy.hubNeedBoth;
+    } else if (allFour && !stats.sunCleared) {
+      $('hubComplete').textContent = C.copy.hubNeedSun;
+    } else if (allFour && !stats.capsuleCleared) {
+      $('hubComplete').textContent = C.copy.hubNeedCapsule;
     }
 
-    $('giftDoor').classList.toggle('hidden', !stats.rooms.has('flirty'));
+    const sunReady = stats.rooms.has('flirty');
+    const sun = $('sunPlanet');
+    if (sun) {
+      sun.classList.toggle('hidden', !sunReady);
+      sun.classList.toggle('locked', !sunReady);
+      sun.classList.toggle('done', stats.sunCleared);
+    }
+    if ($('mapYou')) $('mapYou').classList.toggle('hidden', sunReady);
+
+    $('receiptDoor').textContent = C.copy.receiptDoor || 'print the receipts';
+    $('giftDoor').textContent = C.copy.giftDoor || 'one last thing';
+    $('receiptDoor').classList.toggle('hidden', !(allFour && extrasReady));
+    $('giftDoor').classList.add('hidden');
   }
 
   document.querySelectorAll('.map-node').forEach(d => { d.onclick = () => openRoom(d.dataset.room); });
   $('giftDoor').onclick = () => sceneGift();
+  $('receiptDoor').onclick = () => {
+    receiptFromHub = true;
+    sceneReceipt();
+  };
 
   /* ── FLIRTY GATE — together / forever ──────────── */
   function sceneFlirtyGate() {
@@ -1376,7 +1443,9 @@
       return;
     }
     const i = Math.min(stats.flirtyPassAttempts - 1, G.wrong.length - 1);
-    $('flirtyGateMsg').textContent = stats.flirtyPassAttempts >= 3 ? G.help : G.wrong[i];
+    $('flirtyGateMsg').textContent = stats.flirtyPassAttempts >= 2
+      ? (G.afterTwo || G.help)
+      : G.wrong[i];
     vibe([20, 20]);
     if (window.gsap) gsap.fromTo($('flirtyPassInput'), { x: -8 }, { x: 0, duration: 0.4, ease: 'elastic.out(1,.4)' });
   }
@@ -1420,7 +1489,17 @@
 
   /* ── ROOMS ─────────────────────────────────────── */
   async function openRoom(id) {
+    if (id === 'gift') {
+      if (!stats.rooms.has('flirty')) {
+        toast('the sun wakes after flirty.');
+        return;
+      }
+      stats.sunCleared = true;
+      await travelToPlanet(id);
+      return sceneGift();
+    }
     if (id === 'capsule') {
+      stats.capsuleCleared = true;
       await travelToPlanet(id);
       show('scene-capsule', 'up');
       if (capsuleOpen) {
@@ -1462,7 +1541,8 @@
     $('popoutView').classList.add('hidden');
     $('polaroidView').classList.add('hidden');
     $('romanticChatIntro').classList.add('hidden');
-    $('romanticChatIntro').innerHTML = '';
+    if ($('chatStream')) $('chatStream').innerHTML = '';
+    if ($('chatThreadLabel')) $('chatThreadLabel').textContent = '';
 
     $('roomTag').textContent = C.copy.rooms[id].tag;
     $('roomTitle').textContent = C.copy.rooms[id].title;
@@ -1725,7 +1805,8 @@
       roomCompleteFx('flirty');
       if (window.gsap) gsap.to($('popoutCard'), { scale: 0, opacity: 0, duration: 0.4, ease: 'power2.in' });
       await wait(700);
-      show('scene-hub', 'fade'); refreshHub(); return;
+      startMovieCredits('hub');
+      return;
     }
 
     if (window.gsap) {
@@ -1769,42 +1850,66 @@
 
   async function showRomanticChatIntro() {
     const host = $('romanticChatIntro');
-    const bubbles = Array.isArray(C.copy.rooms.romantic.chatIntro) ? C.copy.rooms.romantic.chatIntro : [];
-    if (!host || bubbles.length === 0) return;
-    host.innerHTML = '';
+    const stream = $('chatStream');
+    const label = $('chatThreadLabel');
+    const threads = Array.isArray(C.copy.rooms.romantic.chatThreads) ? C.copy.rooms.romantic.chatThreads : [];
+    if (!host || !stream || !threads.length) return;
+
+    let skipped = false;
+    const skipBtn = $('chatSkip');
+    const onSkip = () => { skipped = true; };
+    if (skipBtn) skipBtn.onclick = onSkip;
+
+    stream.innerHTML = '';
     host.classList.remove('hidden');
+    host.setAttribute('aria-hidden', 'false');
 
-    bubbles.forEach((item, idx) => {
-      const who = typeof item === 'object' && item?.who === 'her' ? 'her' : (idx % 2 ? 'her' : 'him');
-      const text = typeof item === 'string' ? item : item?.text;
-      if (!text) return;
-      const b = document.createElement('p');
-      b.className = `chat-intro ${who}`;
-      b.textContent = text;
-      host.appendChild(b);
-    });
+    const shapes = ['round', 'cloud', 'oval', 'burst', 'tail'];
+    const pops = [
+      { from: { opacity: 0, scale: 0.2, rotation: -8 }, ease: 'back.out(2.4)' },
+      { from: { opacity: 0, y: 40, scale: 0.8 }, ease: 'back.out(1.8)' },
+      { from: { opacity: 0, x: -50, scale: 0.7 }, ease: 'power3.out' },
+      { from: { opacity: 0, x: 50, scale: 0.7 }, ease: 'power3.out' },
+      { from: { opacity: 0, y: -30, scale: 1.3 }, ease: 'elastic.out(1,.55)' },
+      { from: { opacity: 0, scale: 1.4, rotation: 10 }, ease: 'back.out(1.6)' },
+    ];
 
-    const nodes = [...host.querySelectorAll('.chat-intro')];
-    if (!nodes.length) {
-      host.classList.add('hidden');
-      return;
+    for (const thread of threads) {
+      if (skipped) break;
+      stream.innerHTML = '';
+      if (label) label.textContent = thread.title || '';
+      const bubbles = Array.isArray(thread.bubbles) ? thread.bubbles : [];
+      for (let i = 0; i < bubbles.length; i++) {
+        if (skipped) break;
+        const item = bubbles[i];
+        const who = item?.who === 'her' ? 'her' : 'him';
+        const text = item?.text;
+        if (!text) continue;
+        const b = document.createElement('p');
+        b.className = `comic-bubble ${who} shape-${shapes[i % shapes.length]}`;
+        b.textContent = text;
+        stream.appendChild(b);
+        stream.scrollTop = stream.scrollHeight;
+        const pop = pops[i % pops.length];
+        if (window.gsap) {
+          gsap.fromTo(b, pop.from, { opacity: 1, x: 0, y: 0, scale: 1, rotation: 0, duration: 0.48, ease: pop.ease });
+        } else {
+          b.style.opacity = '1';
+        }
+        await wait(skipped ? 0 : (text.length > 80 ? 3000 : 2500));
+      }
+      if (!skipped) await wait(1600);
     }
 
-    if (window.gsap) {
-      nodes.forEach((node, idx) => {
-        gsap.fromTo(node,
-          { opacity: 0, y: 20, x: node.classList.contains('her') ? 20 : -20, scale: 0.94 },
-          { opacity: 1, y: 0, x: 0, scale: 1, duration: 0.45, delay: idx * 0.55, ease: 'power2.out' });
-      });
-      await wait(nodes.length * 550 + 1150);
-      gsap.to(nodes, { opacity: 0, y: -8, duration: 0.4, stagger: 0.08, ease: 'power1.in' });
-      await wait(520);
-    } else {
-      await wait(1800);
+    if (window.gsap && stream.children.length) {
+      gsap.to(stream.children, { opacity: 0, y: -10, duration: 0.35, stagger: 0.04, ease: 'power1.in' });
+      await wait(420);
     }
-
     host.classList.add('hidden');
-    host.innerHTML = '';
+    host.setAttribute('aria-hidden', 'true');
+    stream.innerHTML = '';
+    if (label) label.textContent = '';
+    if (skipBtn) skipBtn.onclick = null;
   }
 
   async function showRomanticHeartIntro() {
@@ -1966,6 +2071,9 @@
   function leaveRoom() {
     stopFunnyAuto();
     stopRomanticAuto();
+    clearTimeout(usReturnTimer);
+    usReturnTimer = null;
+    if ($('scene-us')) $('scene-us').classList.remove('journey-done');
     show('scene-hub', 'fade');
     refreshHub();
     window.setParticleColor && window.setParticleColor('#b5394b');
@@ -1982,6 +2090,9 @@
   async function openUs() {
     show('scene-us', 'left');
     window.setParticleColor && window.setParticleColor('#7c2a38');
+    $('scene-us').classList.remove('journey-done');
+    clearTimeout(usReturnTimer);
+    usReturnTimer = null;
     $('rotateCopy').textContent = 'Follow the route. Tap each checkpoint in order.';
     $('rotateSkip').textContent = 'start';
     $('rotateGate').classList.add('hidden');
@@ -2020,7 +2131,7 @@
     const updateDoneBtn = () => {
       const done = usFound.size >= total;
       $('usDone').disabled = !done;
-      $('usDone').textContent = done ? 'journey complete ✓' : `checkpoint ${usFound.size}/${total}`;
+      $('usDone').textContent = done ? 'sit with this…' : `checkpoint ${usFound.size}/${total}`;
     };
 
     const updateJourney = () => {
@@ -2103,6 +2214,17 @@
         if (usFound.size >= total) {
           toast('Journey complete', 2800);
           burst({ particleCount: 80, spread: 70, colors: ['#6b1b2a', '#de5d6f', '#fff6f2'] });
+          $('usDone').disabled = true;
+          $('usDone').textContent = 'sit with this…';
+          clearTimeout(usReturnTimer);
+          usReturnTimer = setTimeout(() => {
+            if (current !== 'scene-us') return;
+            $('scene-us').classList.add('journey-done');
+            $('usDone').disabled = false;
+            $('usDone').textContent = 'back to the galaxy';
+            toast('Whenever you\'re ready', 2200);
+            if (window.gsap) gsap.fromTo($('usDone'), { y: 16, opacity: 0.35 }, { y: 0, opacity: 1, duration: 0.45, ease: 'back.out(1.4)' });
+          }, 5000);
         }
       };
       map.appendChild(star);
@@ -2212,22 +2334,59 @@
   }
 
   /* ── FINALE ────────────────────────────────────── */
+  async function loadFavoriteImage() {
+    const files = (Array.isArray(C.media?.favorite) ? C.media.favorite : []).filter(Boolean);
+    for (const file of files) {
+      const src = encodeURI(`Assets/images/favorite/${file}`);
+      if (await exists(src)) return src;
+    }
+    const named = ['IMG_2741', '1', '01', 'favorite', 'favourite', 'fav'];
+    for (const name of named) {
+      const src = await resolveImage('favorite', name);
+      if (src !== PH) return src;
+    }
+    for (let i = 1; i <= 6; i++) {
+      const src = await resolveImage('favorite', i);
+      if (src !== PH) return src;
+    }
+    return PH;
+  }
+
   async function sceneFinale() {
     show('scene-finale', 'pop');
     $('finaleCap').textContent = C.copy.finaleCaption;
     const vid = $('finaleVid');
-    vid.src = videoSource('finale', 'Assets/videos/final/surprise.mp4');
-    const played = await vid.play().then(() => true).catch(() => false);
-    if (!played) {
-      const fav = await roomImage('us', 0);
+    const frame = $('finaleFrame');
+    frame.querySelectorAll('img.finale-pic').forEach((n) => n.remove());
+    const fav = await loadFavoriteImage();
+    if (fav !== PH) {
+      vid.pause();
+      vid.removeAttribute('src');
       vid.classList.add('hidden');
-      if (fav !== PH) {
-        const img = document.createElement('img');
-        img.src = fav;
-        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit';
-        $('finaleFrame').appendChild(img);
-      } else {
-        $('finalePh').classList.remove('hidden');
+      $('finalePh').classList.add('hidden');
+      const img = document.createElement('img');
+      img.className = 'finale-pic';
+      img.src = fav;
+      img.alt = '';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit';
+      frame.appendChild(img);
+    } else {
+      vid.classList.remove('hidden');
+      vid.src = videoSource('finale', 'Assets/videos/final/surprise.mp4');
+      const played = await vid.play().then(() => true).catch(() => false);
+      if (!played) {
+        const fallback = await roomImage('us', 0);
+        vid.classList.add('hidden');
+        if (fallback !== PH) {
+          const img = document.createElement('img');
+          img.className = 'finale-pic';
+          img.src = fallback;
+          img.alt = '';
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit';
+          frame.appendChild(img);
+        } else {
+          $('finalePh').classList.remove('hidden');
+        }
       }
     }
     if (window.gsap) gsap.fromTo($('finaleFrame'), { scale: 0.7, opacity: 0, rotation: 5 }, { scale: 1, opacity: 1, rotation: -1.8, duration: 0.85, ease: 'elastic.out(1,.55)', delay: 0.2 });
@@ -2265,7 +2424,7 @@
     show('scene-candles', 'up');
     lastCandleLit = false;
     $('blowHint').textContent = C.copy.candles;
-    $('candleMsg').textContent = 'allow mic, or swipe the flames';
+    $('candleMsg').textContent = C.copy.candlesAsk || 'Allow the microphone, then blow into the mouthpiece.';
     $('lastCandleMsg').classList.add('hidden');
     $('lastCandleMsg').textContent = '';
 
@@ -2317,6 +2476,7 @@
     sceneEl.onpointerdown = () => out();
 
     try {
+      await wait(700);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream), an = ctx.createAnalyser();
       an.fftSize = 512; src.connect(an);
@@ -2330,7 +2490,7 @@
         else stream.getTracks().forEach(t => t.stop());
       };
       loop();
-      $('candleMsg').textContent = 'blow! 💨';
+      $('candleMsg').textContent = C.copy.candlesReady || 'Blow into the mouthpiece.';
     } catch (_) {
       $('candleMsg').textContent = C.copy.candlesDeny;
     }
@@ -2339,6 +2499,7 @@
   /* ── RECEIPT ───────────────────────────────────── */
   async function sceneReceipt() {
     show('scene-receipt', 'up');
+    $('receiptGo').textContent = receiptFromHub ? (C.copy.receiptBack || 'back to the galaxy') : 'the end…?';
     const elapsed = Date.now() - stats.started;
     const mins = Math.floor(elapsed / 60000);
     const secs = Math.floor((elapsed % 60000) / 1000);
@@ -2355,7 +2516,7 @@
       ['CAPTCHA failures', stats.captchaFails],
       ['Fake help requests', stats.helpRequests],
       ['Decline attempts', stats.declineAttempts],
-      ['Hidden hearts', `${stats.hearts.size}/5`],
+      ['Hidden hearts', `${stats.hearts.size}/${heartEggTotal()}`],
       ['Rooms cleared', `${stats.rooms.size}/4`],
       ['Tab leaves', stats.leftTab],
       ['Time spent', timeStr],
@@ -2380,9 +2541,25 @@
       <div class="rowline"><span style="font-weight:700">TOTAL DUE</span><span style="font-weight:700">one date with me</span></div>
       <div class="dash"></div>
       <p class="verdict">NO REFUNDS. NON-NEGOTIABLE.<br/>served by: ${C.him.from}</p>`;
+
+    lastReceiptText = [
+      R.title,
+      ...lines.map(([a, b]) => `${a}: ${b}`),
+      `OVERALL: ${R.overall}`,
+      'TOTAL DUE: one date with me',
+      `NO REFUNDS. NON-NEGOTIABLE. served by: ${C.him.from}`,
+    ].join('\n');
   }
 
-  $('receiptGo').onclick = () => sceneCredits();
+  $('receiptGo').onclick = () => {
+    if (receiptFromHub) {
+      receiptFromHub = false;
+      show('scene-hub', 'fade');
+      refreshHub();
+      return;
+    }
+    sceneCredits();
+  };
 
   /* ── CREDITS ───────────────────────────────────── */
   function sceneCredits() {
@@ -2398,6 +2575,8 @@
     $('dcSurvived').textContent = C.copy.directorsCut.survived;
     $('dcBtn').textContent = C.copy.directorsCut.btn;
     $('directorsCut').classList.remove('hidden');
+    $('endBerserker').textContent = C.copy.berserkerBtn || 'go berserker';
+    $('endBerserker').classList.toggle('hidden', berserkerPlayed);
 
     const g = $('noGhost');
     g.style.display = 'block';
@@ -2441,15 +2620,129 @@
   };
 
   $('waBtn').onclick = () => {
-    const text = encodeURIComponent('about that receipt...');
-    if (C.whatsappNumber) location.href = `https://wa.me/${C.whatsappNumber}?text=${text}`;
-    else {
-      navigator.clipboard.writeText('about that receipt...').catch(() => {});
-      toast('message copied. now send it to Dzaddzzzy');
+    const text = lastReceiptText || 'about that receipt...';
+    navigator.clipboard.writeText(text).then(() => {
+      toast('receipt copied. paste it to Dzaddzzzy');
+    }).catch(() => {
+      toast('could not copy. screenshot the receipt instead');
+    });
+    if (C.whatsappNumber) {
+      location.href = `https://wa.me/${C.whatsappNumber}?text=${encodeURIComponent(text)}`;
     }
   };
 
+  $('creditsHub').onclick = () => {
+    show('scene-hub', 'fade');
+    refreshHub();
+  };
+
   $('replayBtn').onclick = () => { localStorage.removeItem('charity_preview'); location.reload(); };
+
+  /* ── MOVIE CREDITS + BERSERKER ─────────────────── */
+  function startMovieCredits(after = 'hub') {
+    movieCreditsAfter = after;
+    const overlay = $('movieCredits');
+    const track = $('creditsTrack');
+    const end = $('creditsEnd');
+    track.innerHTML = '';
+    (C.copy.movieCredits || []).forEach((block) => {
+      if (block.role) {
+        const role = document.createElement('p');
+        role.className = 'cred-role';
+        role.textContent = block.role;
+        track.appendChild(role);
+      }
+      const name = document.createElement('p');
+      name.className = block.big ? 'cred-big' : 'cred-name';
+      name.textContent = block.name;
+      track.appendChild(name);
+    });
+    end.classList.add('hidden');
+    $('creditsEndTitle').textContent = C.copy.creditsEndTitle || 'Happy birthday.';
+    $('berserkerGo').textContent = C.copy.berserkerBtn || 'go berserker';
+    $('creditsBack').textContent = C.copy.receiptBack || 'back to the galaxy';
+    $('berserkerGo').classList.toggle('hidden', berserkerPlayed);
+    $('creditsSkip').classList.remove('hidden');
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    track.classList.remove('rolling');
+    void track.offsetWidth;
+    track.classList.add('rolling');
+    track.onanimationend = finishMovieCredits;
+  }
+
+  function finishMovieCredits() {
+    $('creditsEnd').classList.remove('hidden');
+    $('creditsSkip').classList.add('hidden');
+    $('creditsTrack').classList.remove('rolling');
+  }
+
+  function closeMovieCredits() {
+    $('movieCredits').classList.add('hidden');
+    $('movieCredits').setAttribute('aria-hidden', 'true');
+    $('creditsTrack').classList.remove('rolling');
+    if (movieCreditsAfter === 'credits') {
+      show('scene-credits', 'fade');
+      return;
+    }
+    show('scene-hub', 'fade');
+    refreshHub();
+  }
+
+  $('creditsSkip').onclick = () => finishMovieCredits();
+  $('creditsBack').onclick = () => closeMovieCredits();
+  $('berserkerGo').onclick = () => startBerserker();
+  $('endBerserker').onclick = () => startBerserker('credits');
+  $('berserkerStop').onclick = () => stopBerserker();
+
+  function startBerserker(after) {
+    if (after) movieCreditsAfter = after;
+    berserkerPlayed = true;
+    $('movieCredits').classList.add('hidden');
+    const layer = $('berserkerLayer');
+    const stamps = $('berserkerStamps');
+    stamps.innerHTML = '';
+    $('berserkerTitle').textContent = C.copy.berserkerTitle || 'BERSERKER';
+    $('berserkerStop').textContent = C.copy.berserkerStop || "ok that's enough";
+    layer.classList.remove('hidden');
+    layer.classList.add('on');
+    layer.setAttribute('aria-hidden', 'false');
+    $('device').classList.add('heart-race');
+    loveRain(36);
+    burst({ particleCount: 160, spread: 100, colors: ['#ff3158', '#ffd36a', '#fff6f2', '#c5475f'] });
+
+    const lines = C.copy.berserkerStamps || ['HAPPY BIRTHDAY'];
+    let n = 0;
+    clearInterval(berserkerTimer);
+    berserkerTimer = setInterval(() => {
+      const s = document.createElement('div');
+      s.className = 'berserk-stamp';
+      s.textContent = lines[n % lines.length];
+      s.style.left = (6 + Math.random() * 70) + '%';
+      s.style.top = (8 + Math.random() * 70) + '%';
+      s.style.fontSize = (18 + Math.random() * 22) + 'px';
+      s.style.transform = `rotate(${(Math.random() * 24) - 12}deg)`;
+      stamps.appendChild(s);
+      setTimeout(() => s.remove(), 900);
+      n++;
+      if (n % 2 === 0) loveRain(8);
+      if (n % 3 === 0) burst({ particleCount: 40, spread: 80, colors: ['#ff3158', '#fff6f2'] });
+      vibe([18, 30, 18]);
+    }, 420);
+  }
+
+  function stopBerserker() {
+    clearInterval(berserkerTimer);
+    berserkerTimer = null;
+    const layer = $('berserkerLayer');
+    layer.classList.add('hidden');
+    layer.classList.remove('on');
+    layer.setAttribute('aria-hidden', 'true');
+    $('device').classList.remove('heart-race');
+    $('berserkerGo').classList.add('hidden');
+    if ($('endBerserker')) $('endBerserker').classList.add('hidden');
+    closeMovieCredits();
+  }
 
   /* ── EXTRA INTERACTIONS ────────────────────────── */
   document.addEventListener('visibilitychange', () => {
