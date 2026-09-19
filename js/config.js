@@ -5,8 +5,6 @@
    1...caption text.JPG, 2...caption text.jpg, etc.
    in Assets/images/{funny,flirty,romantic,us,videocall}
    Videos: Assets/videos/intro/dance.mp4
-           Assets/videos/final/surprise.mp4
-   Chats:  Assets/chats/01.jpg  (we'll turn screenshots into bubbles)
    Preview before 21 Sept: add ?preview=1 to the URL
    ============================================================ */
 
@@ -27,7 +25,7 @@ window.BDAY = {
   pin: "2322", // his age + her age. switch to "2223" if you want her-first
   birthdayISO: "2026-09-21",
   capsuleISO: "2026-10-21",
-  whatsappNumber: "", // e.g. "2637XXXXXXX" no plus. empty = copy text instead
+  whatsappNumber: "263780697249", // +263 78 069 7249. digits only for wa.me
   dateTitle: "Date with Dzaddzzzy",
   dateDetails: "TBD — he will fill this in.",
 
@@ -88,8 +86,7 @@ window.BDAY = {
       "IMG_5627.JPG",
     ],
     favorite: [
-      "IMG_2741.jpeg",
-      "1.jpg",
+      "1.jpeg",
     ],
     captchaHer: [
       "idf.jpg",
@@ -104,7 +101,6 @@ window.BDAY = {
   },
   videos: {
     intro: "Assets/videos/intro/bafdae dance.mp4",
-    finale: "Assets/videos/final/surprise.mp4",
   },
 
   copy: {
@@ -378,15 +374,22 @@ window.BDAY = {
     scan: ["Scanning how much I like you…", "ERROR: number too large for this cheap website"],
     finaleCaption: "and Jehovah then took the pen himself so he could write our magnificent love story",
     letter: [
-      // Paste the royal birthday letter here when you have it. It scrolls like a scroll.
-      "mammacita.",
-      "I made this because cake is boring and you are not.",
-      "You're annoying in the specific way I want every day.",
-      "I like the version of you that laughs too loud, dances like the room is yours, and still somehow fits in my chest like a secret.",
-      "Happy birthday, mammacita.",
-      "Now stop looking at me like that. I planned this.",
+      "mammacita",
+      "Happy birthday, my problem, my favourite view, my very illegal thought at 2am.",
+      "I still dont know how I got you and God hears thank you's from me alotte. I look at u and my brain just goes quiet then loud then stupid. You r annoying in the specific way I want every day.",
+      "oogh this is a scroll version lemme use thy shakespeare mode :).",
+      "I liketh the version of thee that argueth. The version tt sendeth me voice notes like a court case, objection your honour, I love her. The version tt sayeth “I love you more” like dis a sport and she already won. That face. That mouth. That smile. That body. Forsooth. I don’t know wah forsooth means buh it felt kinda expensive. The way thou lookest at me like thou already knowest I’m gone. I thinketh about thee when I should be behaving, which I am not, clearly. Thou keepest getting better everytime l take a glance at thee.",
+      "Thou art my wife in the way we already talketh about it. Mine human diary. Mine mammacita. Quinn. Star. Boo. Charity. All of thee. I am not picking. A rose by any other name is still my girl.",
+      "Cake is boring. Thou fine art not.",
+      "I’d rather eat the birthday girl.",
+      "Happy birthday Charity.",
+      "P.s. (ur boring guy, trying to be cultured)",
+      "Taku",
+      "…thee",
+      "…thine",
+      "I dont know Happy birthday",
     ],
-    letterSign: ["Always,", "Taku"],
+    letterSign: [],
     candles: "Blow into your phone's mouthpiece.",
     candlesAsk: "Your phone will ask to use the microphone. Allow it, then blow into the mouthpiece.",
     candlesReady: "Blow into the mouthpiece. If nothing happens, swipe the flames.",
@@ -437,9 +440,9 @@ window.BDAY = {
       finale: { num: "05", title: "THE FINALE", sub: "this is why you matter" },
     },
     hubComplete: "Now you can print what happened.",
-    hubNeedBoth: "The four sides are done. Now clear the sun, and the hourglass too.",
+    hubNeedBoth: "The four sides are done. Now clear the sun.",
     hubNeedSun: "The sun is still waiting. Clear it first.",
-    hubNeedCapsule: "The hourglass still needs you.",
+    hubNeedCapsule: "The hourglass opens after 30 days. Come back 21 October.",
     receiptDoor: "print the receipts",
     giftDoor: "one last thing",
     receiptBack: "back to the galaxy",
@@ -457,6 +460,7 @@ window.BDAY = {
       { role: "postscript", name: "Now stop looking at me like that. I planned this." },
       { role: "issued to", name: "you, obviously" },
       { role: "no refunds", name: "THE END" , big: true },
+      { speech: true, name: "you cannot say God does not answer prayers when he has blessed you with a patner like me darling, He mus really love you to give you a friend of all seasons, a partner for life and a shoulder to cry on babiey, somebody who understand the pain of being alone and the joy of having you, somebody who understands watchu mean to God... mammacita this aint no love you can buy ...its Gifted and l pray to Jehovah u dont take it for granted,, ypu hv been placed in a place where u are valued" },
     ],
     creditsEndTitle: "Happy birthday.",
     berserkerBtn: "go berserker",
@@ -480,8 +484,10 @@ window.BDAY = {
       "Ngiyakuthanda",
       "I LOVE YOU",
     ],
-    capsuleMystery: "One last thing isn't ready yet. Come back.",
+    capsuleMystery: "Come back after 30 days, boo. 21 October. I hid something here on purpose. Wait.",
     capsuleDays: (n) => `${n} day${n === 1 ? "" : "s"} remaining`,
+    capsuleCode: "190325",
+    capsuleUnlocked: "You waited. Secret code below. That's our anniversary. Give this code to Dzaddzzzy.",
     datePhases: {
       before: "Something is waiting for you…",
       today: "Today's the day.",
@@ -523,12 +529,6 @@ window.BDAY = {
     theEnd: "THE END…?",
     orIsIt: "Or is it?",
     capsuleLock: "LOCKED. Unlocks 21 October. Yes, I planned that far ahead. Yes, I'm like this.",
-    capsulePeek: [
-      "Mamma",
-      "If you're reading this, I really did plan 30 days ahead.",
-      "Part two goes here.",
-      "Maybe sum' will appear after 30 days or l just want you to wait for nonsense. Don't forget.",
-    ],
     noGhost: [
       "don't tell him I'm here",
       "worst day of my life",
@@ -551,26 +551,4 @@ window.BDAY = {
       ok: "together forever.",
     },
   },
-
-  chats: [
-    {
-      when: "then",
-      bubbles: [
-        { who: "him", text: "you're ignoring me" },
-        { who: "her", text: "I'm literally in the same room" },
-        { who: "him", text: "so look at me" },
-        { who: "her", text: "…" },
-        { who: "him", text: "that's what I thought, Starrr" },
-      ],
-    },
-    {
-      when: "later",
-      bubbles: [
-        { who: "her", text: "Quinn is not talking to you" },
-        { who: "him", text: "tell Quinn Dzaddzzzy said hi" },
-        { who: "her", text: "she said you're annoying" },
-        { who: "him", text: "she loves it" },
-      ],
-    },
-  ],
 };

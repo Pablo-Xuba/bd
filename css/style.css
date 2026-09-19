@@ -192,6 +192,18 @@ button,input { font-family:inherit; }
 #scene-receipt   { background:radial-gradient(ellipse at center,#181117,#070609 74%); }
 #scene-credits   { background:radial-gradient(ellipse at top,#22131a,#08060a 74%); }
 #scene-capsule   { background:radial-gradient(ellipse at bottom,#1e1117,#080509 74%); }
+.capsule-code {
+  margin:22px auto 0;
+  max-width:280px;
+  padding:14px 18px 12px;
+  font-family:'Times New Roman', Times, serif;
+  font-size:2.1rem;
+  letter-spacing:.28em;
+  color:#f3e6c4;
+  background:rgba(18,8,10,.55);
+  border:1px solid rgba(240,204,122,.45);
+  box-shadow:0 0 0 4px rgba(18,8,10,.4), 0 12px 28px rgba(0,0,0,.35);
+}
 #scene-countdown { background:radial-gradient(ellipse at center,#1a1018,#080509 74%); }
 #scene-prestart  { background:radial-gradient(ellipse at top,#241116,#080507 74%); }
 #scene-flirty-gate { background:radial-gradient(ellipse at center,#300f16,#080507 74%); }
@@ -529,7 +541,7 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
   transform:rotate(-1.8deg);
   position:relative;
 }
-.video-frame video,.video-frame .ph {
+.video-frame video,.video-frame .ph,.video-frame img.finale-pic {
   width:100%;height:100%;object-fit:cover;
 }
 .video-frame .ph {
@@ -1317,23 +1329,28 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
 }
 .letter {
   background:transparent;
-  color:#3a2410;
+  color:#1a1208;
   border-radius:0;
   padding:4px 6px 10px;
   min-height:0;
   flex:1;
   text-align:left;
-  font-family:'Cormorant Garamond',Georgia,serif;
-  font-size:1.08rem;
-  line-height:1.75;
+  font-family:'Times New Roman', Times, serif;
+  font-size:1.02rem;
+  line-height:1.7;
+  font-weight:400;
   box-shadow:none;
   overflow:auto;
   -webkit-overflow-scrolling:touch;
+  text-shadow:
+    0.35px 0.5px 0.45px rgba(28, 12, 4, .45),
+    0 0 0.7px rgba(18, 8, 0, .28);
 }
 .letter p:first-child {
-  font-family:'Cinzel',serif;
+  font-family:'Times New Roman', Times, serif;
   font-weight:700;
-  letter-spacing:.08em;
+  letter-spacing:.02em;
+  font-size:1.12rem;
 }
 #scene-letter { overflow:hidden; }
 #scene-credits {
@@ -2125,7 +2142,7 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
   animation:none;
 }
 .credits-track.rolling {
-  animation:creditsCrawl 56s linear forwards;
+  animation:creditsCrawl 78s linear forwards;
 }
 @keyframes creditsCrawl {
   from { transform:translateY(0); }
@@ -2148,6 +2165,15 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
   font-family:'Great Vibes', serif;
   font-size:2.4rem;
   color:var(--gold);
+}
+.cred-speech {
+  margin:52px auto 80px;
+  max-width:280px;
+  font-family:'Times New Roman', Times, serif;
+  font-size:.92rem;
+  line-height:1.7;
+  font-style:italic;
+  color:#f2d5c5;
 }
 .credits-skip {
   position:absolute;

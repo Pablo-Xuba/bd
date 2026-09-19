@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Great+Vibes&family=Outfit:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,500;1,500&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style.css?v=pack11" />
+    <link rel="stylesheet" href="css/style.css?v=pack17" />
     <style>
       #scene-captcha {
         justify-content: center !important;
@@ -504,6 +504,7 @@
             <p class="tiny">time capsule</p>
             <h1 class="script gold" style="font-size:3.2rem">later, boo</h1>
             <p id="capsuleCopy" class="line" style="margin-top:20px"></p>
+            <p id="capsuleCode" class="capsule-code hidden" aria-live="polite"></p>
             <button class="btn ghost" id="capsuleBack" style="margin-top:24px">back</button>
           </div>
         </section>
@@ -531,11 +532,7 @@
         <!-- FINALE -->
         <section class="scene" id="scene-finale">
           <div class="video-frame" id="finaleFrame">
-            <video id="finaleVid" playsinline webkit-playsinline></video>
-            <div class="ph hidden" id="finalePh">
-              final video / special photo<br />
-              <span class="tiny">Assets/videos/final/surprise.mp4</span>
-            </div>
+            <div class="ph hidden" id="finalePh">favorite photo</div>
           </div>
           <p class="center" id="finaleCap" style="margin-top:14px;font-style:italic"></p>
           <button class="btn" id="finaleGo" style="margin-top:12px">continue</button>
@@ -605,7 +602,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="js/config.js?v=pack11"></script>
-    <script src="js/app.js?v=pack12"></script>
+    <script src="js/config.js?v=pack17"></script>
+    <script src="js/app.js?v=pack17"></script>
   </body>
 </html>

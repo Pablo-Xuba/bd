@@ -11,7 +11,7 @@
   const capsuleAt = new Date(`${C.capsuleISO}T00:00:00`);
   const now = () => new Date();
   const unlocked = preview || now() >= birthday;
-  const capsuleOpen = preview || now() >= capsuleAt;
+  const capsuleOpen = params.has('capsule') || now() >= capsuleAt;
 
   const stats = {
     noClicks: 0, pinAttempts: 0, captchaFails: 0, helpRequests: 0,
@@ -1360,8 +1360,8 @@
       : 'locked';
 
     const capNode = document.querySelector('.map-node.capsule');
-    capNode.classList.toggle('locked', !capsuleOpen && stats.rooms.size < 4);
-    capNode.classList.toggle('done', stats.capsuleCleared);
+    capNode.classList.toggle('locked', !capsuleOpen);
+    capNode.classList.toggle('done', stats.capsuleCleared && capsuleOpen);
     if (capsuleOpen) {
       document.querySelector('.map-node.capsule .map-tag').textContent = C.copy.datePhases.capsule;
     } else {
@@ -1371,7 +1371,7 @@
 
     $('mapGlow').classList.toggle('lit', stats.rooms.size >= 4);
     const allFour = stats.rooms.has('flirty') && ['funny', 'romantic', 'us'].every(r => stats.rooms.has(r));
-    const extrasReady = stats.sunCleared && stats.capsuleCleared;
+    const extrasReady = stats.sunCleared;
     $('hubComplete').classList.toggle('hidden', !allFour);
     if (allFour && extrasReady) {
       $('hubComplete').textContent = C.copy.hubComplete;
@@ -1379,12 +1379,8 @@
         refreshHub._celebrated = true;
         burst({ particleCount: 40, spread: 60 });
       }
-    } else if (allFour && !stats.sunCleared && !stats.capsuleCleared) {
-      $('hubComplete').textContent = C.copy.hubNeedBoth;
     } else if (allFour && !stats.sunCleared) {
-      $('hubComplete').textContent = C.copy.hubNeedSun;
-    } else if (allFour && !stats.capsuleCleared) {
-      $('hubComplete').textContent = C.copy.hubNeedCapsule;
+      $('hubComplete').textContent = C.copy.hubNeedSun || C.copy.hubNeedBoth;
     }
 
     const sunReady = stats.rooms.has('flirty');
@@ -1499,14 +1495,23 @@
       return sceneGift();
     }
     if (id === 'capsule') {
-      stats.capsuleCleared = true;
       await travelToPlanet(id);
       show('scene-capsule', 'up');
+      const codeEl = $('capsuleCode');
       if (capsuleOpen) {
-        $('capsuleCopy').textContent = C.copy.capsulePeek.join(' ');
+        stats.capsuleCleared = true;
+        $('capsuleCopy').textContent = C.copy.capsuleUnlocked;
+        if (codeEl) {
+          codeEl.textContent = C.copy.capsuleCode || '190325';
+          codeEl.classList.remove('hidden');
+        }
       } else {
         const days = Math.max(0, Math.ceil((capsuleAt - now()) / 86400000));
-        $('capsuleCopy').textContent = C.copy.capsuleMystery + ' 🔒 OPENS 21 OCTOBER 2026. ' + (days > 0 ? C.copy.capsuleDays(days) + '.' : C.copy.capsuleLock);
+        $('capsuleCopy').textContent = C.copy.capsuleMystery + ' 🔒 ' + (days > 0 ? C.copy.capsuleDays(days) + '.' : C.copy.capsuleLock);
+        if (codeEl) {
+          codeEl.textContent = '';
+          codeEl.classList.add('hidden');
+        }
       }
       return;
     }
@@ -2164,18 +2169,7 @@
         : `<img src="${mem.src}" alt="${C.her.call || C.her.name}" />`;
       text.textContent = mem.line;
       chats.innerHTML = '';
-      const pack = idx === 2 ? C.chats[0] : idx === 5 ? C.chats[1] : null;
-      if (pack) {
-        pack.bubbles.forEach(b => {
-          const el = document.createElement('div');
-          el.className = 'bubble ' + b.who;
-          el.textContent = b.text;
-          chats.appendChild(el);
-        });
-        chats.classList.remove('hidden');
-      } else {
-        chats.classList.add('hidden');
-      }
+      chats.classList.add('hidden');
       card.classList.remove('hidden');
       if (window.gsap) gsap.fromTo(card, { opacity: 0, y: 18, x: 18 }, { opacity: 1, y: 0, x: 0, duration: 0.35, ease: 'power2.out' });
     };
@@ -2355,14 +2349,10 @@
   async function sceneFinale() {
     show('scene-finale', 'pop');
     $('finaleCap').textContent = C.copy.finaleCaption;
-    const vid = $('finaleVid');
     const frame = $('finaleFrame');
     frame.querySelectorAll('img.finale-pic').forEach((n) => n.remove());
     const fav = await loadFavoriteImage();
     if (fav !== PH) {
-      vid.pause();
-      vid.removeAttribute('src');
-      vid.classList.add('hidden');
       $('finalePh').classList.add('hidden');
       const img = document.createElement('img');
       img.className = 'finale-pic';
@@ -2371,23 +2361,7 @@
       img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit';
       frame.appendChild(img);
     } else {
-      vid.classList.remove('hidden');
-      vid.src = videoSource('finale', 'Assets/videos/final/surprise.mp4');
-      const played = await vid.play().then(() => true).catch(() => false);
-      if (!played) {
-        const fallback = await roomImage('us', 0);
-        vid.classList.add('hidden');
-        if (fallback !== PH) {
-          const img = document.createElement('img');
-          img.className = 'finale-pic';
-          img.src = fallback;
-          img.alt = '';
-          img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit';
-          frame.appendChild(img);
-        } else {
-          $('finalePh').classList.remove('hidden');
-        }
-      }
+      $('finalePh').classList.remove('hidden');
     }
     if (window.gsap) gsap.fromTo($('finaleFrame'), { scale: 0.7, opacity: 0, rotation: 5 }, { scale: 1, opacity: 1, rotation: -1.8, duration: 0.85, ease: 'elastic.out(1,.55)', delay: 0.2 });
   }
@@ -2646,6 +2620,13 @@
     const end = $('creditsEnd');
     track.innerHTML = '';
     (C.copy.movieCredits || []).forEach((block) => {
+      if (block.speech) {
+        const speech = document.createElement('p');
+        speech.className = 'cred-speech';
+        speech.textContent = block.name || '';
+        track.appendChild(speech);
+        return;
+      }
       if (block.role) {
         const role = document.createElement('p');
         role.className = 'cred-role';
