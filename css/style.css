@@ -192,6 +192,10 @@ button,input { font-family:inherit; }
 }
 #scene-hub > * { position:relative; z-index:2; }
 #scene-hub {
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-height:0;
   padding-top:12px;
   padding-bottom: calc(8px + var(--safe));
 }
@@ -1763,8 +1767,9 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
 .world-map {
   position:relative;
   margin-top:4px;
-  flex:1;
-  min-height:0;
+  flex:1 1 0%;
+  height:0;
+  min-height:48svh;
   overflow:visible;
   background:transparent;
 }
