@@ -539,15 +539,15 @@ window.BDAY = {
     shareSub: "Issued by ur manssss. No refunds.",
     flirtyGate: {
       prompt: "TOGETHER",
-      hint: "finish it.",
+      hint: "wen l say together you say ??",
       placeholder: "the rest…",
       go: "unlock",
       wrong: [
         "not that.",
         "you know this one.",
       ],
-      afterTwo: "when I say forever you say what",
-      help: "when I say forever you say what",
+      afterTwo: "wen l say together you say ??",
+      help: "wen l say together you say ??",
       ok: "together forever.",
     },
   },
