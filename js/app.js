@@ -92,13 +92,46 @@
     return Number(C.slots?.[room] || 0);
   }
 
-  async function roomImage(room, idx) {
+  function roomImage(room, idx) {
     const known = ROOM_MEDIA[room];
-    if (known && known[idx]) {
-      const url = mediaUrl(room, known[idx].file);
-      if (await exists(url)) return url;
+    if (known && known[idx]) return mediaUrl(room, known[idx].file);
+    return PH;
+  }
+
+  function preloadUrl(url) {
+    if (!url || url === PH) return;
+    const img = new Image();
+    img.src = url;
+  }
+
+  async function waitForImg(img) {
+    if (!img || img.classList.contains('hidden')) return;
+    if (!img.getAttribute('src')) return;
+    try {
+      if (img.decode) await img.decode();
+      else if (!img.complete) {
+        await new Promise((res) => {
+          img.onload = () => res();
+          img.onerror = () => res();
+        });
+      }
+    } catch (_) {}
+  }
+
+  async function setSlideImg(img, ph, src, phText) {
+    if (src && src !== PH) {
+      if (ph) ph.classList.add('hidden');
+      img.classList.remove('hidden');
+      if (img.getAttribute('src') !== src) img.src = src;
+      await waitForImg(img);
+    } else {
+      img.removeAttribute('src');
+      img.classList.add('hidden');
+      if (ph) {
+        ph.classList.remove('hidden');
+        if (phText) ph.textContent = phText;
+      }
     }
-    return resolveImage(room, idx + 1);
   }
 
   function roomCaption(room, idx) {
@@ -523,7 +556,7 @@
       const img = new Image();
       img.onload = () => res(true);
       img.onerror = () => res(false);
-      img.src = url + '?v=1';
+      img.src = url;
     });
   }
 
@@ -990,10 +1023,7 @@
     const who = (C.her.call || C.her.name).toLowerCase();
 
     const buildCard = async (folder, file, fallbackKey) => {
-      if (file) {
-        const src = encodeURI(`Assets/images/${folder}/${file}`);
-        return (await exists(src)) ? src : PH;
-      }
+      if (file) return encodeURI(`Assets/images/${folder}/${file}`);
       return resolveImage(folder, fallbackKey);
     };
 
@@ -1590,7 +1620,7 @@
     funnyAutoTimer = setInterval(() => {
       if (current !== 'scene-room' || roomId !== 'funny') return;
       advanceFunny(true);
-    }, 3400);
+    }, 5200);
   }
 
   function funnyTransitionStyle(idx) {
@@ -1696,19 +1726,12 @@
   }
 
   async function loadBookFront(idx) {
-    const src = await roomImage('funny', idx);
+    const src = roomImage('funny', idx);
     const img = $('bookFront');
     const ph = $('bookFrontPh');
-    if (src !== PH) {
-      img.src = src;
-      img.classList.remove('hidden');
-      ph.classList.add('hidden');
-    } else {
-      img.classList.add('hidden');
-      ph.classList.remove('hidden');
-      ph.textContent = `funny · ${String(idx + 1).padStart(2, '0')}`;
-    }
+    await setSlideImg(img, ph, src, `funny · ${String(idx + 1).padStart(2, '0')}`);
     $('bookFrontCap').textContent = roomCaption('funny', idx);
+    preloadUrl(roomImage('funny', idx + 1));
   }
 
   async function loadBookBack(idx) {
@@ -1718,18 +1741,10 @@
       $('bookBackPh').classList.add('hidden');
       return;
     }
-    const src = await roomImage('funny', idx);
+    const src = roomImage('funny', idx);
     const img = $('bookBack');
     const ph = $('bookBackPh');
-    if (src !== PH) {
-      img.src = src;
-      img.classList.remove('hidden');
-      ph.classList.add('hidden');
-    } else {
-      img.classList.add('hidden');
-      ph.classList.remove('hidden');
-      ph.textContent = `funny · ${String(idx + 1).padStart(2, '0')}`;
-    }
+    await setSlideImg(img, ph, src, `funny · ${String(idx + 1).padStart(2, '0')}`);
     $('bookBackCap').textContent = roomCaption('funny', idx);
   }
 
@@ -1776,22 +1791,18 @@
   }
 
   async function loadFlirty(idx) {
-    const src = await roomImage('flirty', idx);
+    const src = roomImage('flirty', idx);
     const img = $('popoutImg'), ph = $('popoutPh'), bg = $('flirtyBg');
     const line = roomCaption('flirty', idx);
     if (src !== PH) {
-      img.src = src;
-      img.classList.remove('hidden');
-      ph.classList.add('hidden');
-      bg.style.backgroundImage = `url(${src})`;
+      bg.style.backgroundImage = `url("${src}")`;
     } else {
-      img.classList.add('hidden');
-      ph.classList.remove('hidden');
-      ph.textContent = line;
       bg.style.backgroundImage = 'none';
     }
+    await setSlideImg(img, ph, src, line);
     $('popoutLabel').textContent = line;
     if (idx === 0) mascotSay(C.copy.mascot.flirty, '◆');
+    preloadUrl(roomImage('flirty', idx + 1));
 
     if (window.gsap) {
       gsap.fromTo($('popoutCard'),
@@ -1850,7 +1861,7 @@
     romanticAutoTimer = setInterval(() => {
       if (current !== 'scene-room' || roomId !== 'romantic') return;
       advanceRomantic(true);
-    }, 4200);
+    }, 5000);
   }
 
   async function showRomanticChatIntro() {
@@ -1953,16 +1964,16 @@
   }
 
   async function loadRomantic(idx) {
-    const src = await roomImage('romantic', idx);
+    const src = roomImage('romantic', idx);
     const img = $('roomPic'), ph = $('roomPh'), pol = $('polaroidView');
     pol.classList.remove('upside', 'blurred', 'develop');
     $('scratch').classList.add('hidden');
     $('scratch').style.pointerEvents = 'none';
     const line = roomCaption('romantic', idx);
 
-    if (src !== PH) { img.src = src; img.classList.remove('hidden'); ph.classList.add('hidden'); }
-    else { img.classList.add('hidden'); ph.classList.remove('hidden'); ph.textContent = `romantic · 0${idx + 1}`; }
+    await setSlideImg(img, ph, src, `romantic · 0${idx + 1}`);
     $('roomCap').textContent = line;
+    preloadUrl(roomImage('romantic', idx + 1));
 
     const target = src !== PH ? img : ph;
     await photoPersonality(target, idx);
@@ -2127,7 +2138,7 @@
     const memories = [];
     for (let i = 1; i <= total; i++) {
       memories.push({
-        src: await roomImage('us', i - 1),
+        src: roomImage('us', i - 1),
         line: roomCaption('us', i - 1),
         label: labels[i - 1] || 'US',
       });
@@ -2164,9 +2175,16 @@
     const renderMemory = (idx) => {
       const mem = memories[idx];
       tag.textContent = `${mem.label} • CHECKPOINT ${String(idx + 1).padStart(2, '0')}`;
-      media.innerHTML = mem.src === PH
-        ? `<div class="ph">us · ${String(idx + 1).padStart(2, '0')}</div>`
-        : `<img src="${mem.src}" alt="${C.her.call || C.her.name}" />`;
+      if (mem.src === PH) {
+        media.innerHTML = `<div class="ph">us · ${String(idx + 1).padStart(2, '0')}</div>`;
+      } else {
+        media.innerHTML = `<div class="ph">loading…</div>`;
+        const img = document.createElement('img');
+        img.alt = C.her.call || C.her.name;
+        img.onload = () => { media.innerHTML = ''; media.appendChild(img); };
+        img.onerror = () => { media.innerHTML = `<div class="ph">us · ${String(idx + 1).padStart(2, '0')}</div>`; };
+        img.src = mem.src;
+      }
       text.textContent = mem.line;
       chats.innerHTML = '';
       chats.classList.add('hidden');
@@ -2330,19 +2348,7 @@
   /* ── FINALE ────────────────────────────────────── */
   async function loadFavoriteImage() {
     const files = (Array.isArray(C.media?.favorite) ? C.media.favorite : []).filter(Boolean);
-    for (const file of files) {
-      const src = encodeURI(`Assets/images/favorite/${file}`);
-      if (await exists(src)) return src;
-    }
-    const named = ['IMG_2741', '1', '01', 'favorite', 'favourite', 'fav'];
-    for (const name of named) {
-      const src = await resolveImage('favorite', name);
-      if (src !== PH) return src;
-    }
-    for (let i = 1; i <= 6; i++) {
-      const src = await resolveImage('favorite', i);
-      if (src !== PH) return src;
-    }
+    if (files[0]) return mediaUrl('favorite', files[0]);
     return PH;
   }
 

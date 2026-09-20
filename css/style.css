@@ -14,11 +14,12 @@
   --muted:#c6adb2;
   --ok:#2fa86a;
   --card:#171217;
-  --safe:env(safe-area-inset-bottom,16px);
+  --safe:env(safe-area-inset-bottom, 0px);
 }
 
 html,body {
   height:100%;
+  height:100svh;
   background:#040305;
   color:var(--cream);
   font-family:'Outfit',system-ui,sans-serif;
@@ -35,6 +36,7 @@ button,input { font-family:inherit; }
 #stage {
   width:100%;
   height:100dvh;
+  height:100svh;
   display:grid;
   place-items:center;
   background:
@@ -47,6 +49,7 @@ button,input { font-family:inherit; }
   position:relative;
   width:min(100vw,430px);
   height:100dvh;
+  height:100svh;
   background:var(--bg);
   overflow:hidden;
 }
@@ -123,7 +126,7 @@ button,input { font-family:inherit; }
   inset:0;
   display:none;
   flex-direction:column;
-  padding:38px 22px calc(36px + var(--safe));
+  padding:18px 18px calc(14px + var(--safe));
   overflow:hidden;
   z-index:1;
   transition:background .5s;
@@ -142,7 +145,21 @@ button,input { font-family:inherit; }
 #scene-love      { background:radial-gradient(ellipse at bottom,#37111a,#0b0608 74%); }
 #scene-captcha,
 #scene-perm      { background:radial-gradient(ellipse at center,#1d151a,#09070a 74%); }
-#scene-pin       { background:radial-gradient(ellipse at top,#22151b,#09070a 74%); }
+#scene-pin {
+  background:radial-gradient(ellipse at top,#22151b,#09070a 74%);
+  padding-top:12px;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#scene-pin .vault {
+  width:64px;
+  height:64px;
+  margin:4px auto 8px;
+  font-size:1.7rem;
+}
+#scene-pin h2 { font-size:1.25rem; }
+#scene-pin .keypad { gap:8px; margin-top:8px; }
+#scene-pin .key { height:50px; font-size:1.25rem; }
 #scene-hub       {
   position:relative;
   background:
@@ -175,7 +192,8 @@ button,input { font-family:inherit; }
 }
 #scene-hub > * { position:relative; z-index:2; }
 #scene-hub {
-  padding-bottom: calc(16px + var(--safe));
+  padding-top:12px;
+  padding-bottom: calc(8px + var(--safe));
 }
 #scene-room.funny-mode   { background:radial-gradient(ellipse at top left,#281611,#090607 74%); }
 #scene-room.flirty-mode  { background:radial-gradient(ellipse at bottom right,#330f17,#080507 74%); }
@@ -529,7 +547,7 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
 .video-frame {
   width:100%;
   aspect-ratio:9/16;
-  max-height:64dvh;
+  max-height:58dvh;
   margin:auto;
   border-radius:26px;
   overflow:hidden;
@@ -543,6 +561,17 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
 }
 .video-frame video,.video-frame .ph,.video-frame img.finale-pic {
   width:100%;height:100%;object-fit:cover;
+}
+#scene-dance .video-frame {
+  transform:none;
+  flex:1;
+  min-height:0;
+  max-height:58svh;
+  aspect-ratio:auto;
+}
+#scene-dance .video-frame video {
+  object-fit:contain;
+  background:#050308;
 }
 .video-frame .ph {
   display:grid;place-items:center;
@@ -1733,9 +1762,9 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
 /* ── WORLD MAP HUB ─────────────────────────────────────── */
 .world-map {
   position:relative;
-  margin-top:8px;
+  margin-top:4px;
   flex:1;
-  min-height:240px;
+  min-height:0;
   overflow:visible;
   background:transparent;
 }
@@ -1863,25 +1892,25 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
 }
 .map-node b,
 .map-node .map-tag { display:none; }
-.map-node.romantic { left:50%; top:15%; background:radial-gradient(circle at 30% 20%,#8f57e8,#22102f 70%); }
-.map-node.funny { left:16%; top:42%; background:radial-gradient(circle at 30% 22%,#f6ab70,#2a120d 70%); }
-.map-node.flirty { left:84%; top:42%; background:radial-gradient(circle at 30% 22%,#e75a78,#310c14 70%); }
-.map-node.us { left:28%; top:78%; background:radial-gradient(circle at 30% 22%,#9b7de8,#1f132b 70%); }
+.map-node.romantic { left:50%; top:14%; background:radial-gradient(circle at 30% 20%,#8f57e8,#22102f 70%); }
+.map-node.funny { left:14%; top:40%; background:radial-gradient(circle at 30% 22%,#f6ab70,#2a120d 70%); }
+.map-node.flirty { left:86%; top:40%; background:radial-gradient(circle at 30% 22%,#e75a78,#310c14 70%); }
+.map-node.us { left:26%; top:84%; background:radial-gradient(circle at 30% 22%,#9b7de8,#1f132b 70%); }
 .map-node.capsule {
   width:78px;
   height:78px;
-  left:72%;
-  top:78%;
+  left:74%;
+  top:84%;
   border-radius:50%;
   border-style:dashed;
   background:radial-gradient(circle at 30% 22%,#f2d5c5,#2a1418 72%);
 }
 .map-node.capsule::before { border-radius:50%; inset:-6px; border-style:dashed; }
 .map-node.sun {
-  width:156px;
-  height:156px;
+  width:132px;
+  height:132px;
   left:50%;
-  top:46%;
+  top:50%;
   z-index:5;
   border-color:rgba(255,214,120,.7);
   background:
@@ -1915,7 +1944,8 @@ h1,h2 { font-weight:700;letter-spacing:.02em; }
 .map-node.locked { opacity:.48;cursor:not-allowed;transform:translate(-50%,-50%) scale(1) !important; }
 .map-node:not(.locked):hover { transform:translate(-50%,-50%) scale(1.08); }
 .hub-dock {
-  margin-top:8px;
+  margin-top:4px;
+  flex-shrink:0;
   display:flex;
   flex-direction:column;
   gap:8px;
